@@ -1,8 +1,6 @@
 // ─── State ────────────────────────────────────────────────────────────────────
-const GOOGLE_MAPS_API_KEY = 'AIzaSyDzdc9GUQN6X2r8vw1_7kcVGRyvP5ZLoNM';
-
 const state = {
-  apiKey: GOOGLE_MAPS_API_KEY,
+  apiKey: '',
   excelRows: [],
   addresses: [],      // {id, name, address, lat, lng, success}
   route: null,
@@ -21,8 +19,19 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 async function checkConfig() {
-  setStatus('✅ API Key vorhanden', 'ok');
-  loadGoogleMaps(state.apiKey);
+  try {
+    const res = await fetch(`${BACKEND}/config`);
+    const cfg = await res.json();
+    if (cfg.apiKey) {
+      state.apiKey = cfg.apiKey;
+      setStatus('✅ API Key vorhanden', 'ok');
+      loadGoogleMaps(state.apiKey);
+    } else {
+      setStatus('⚠️ Kein API Key konfiguriert', 'error');
+    }
+  } catch {
+    setStatus('⚠️ Backend nicht erreichbar', 'error');
+  }
 }
 
 function setStatus(msg, cls) {
