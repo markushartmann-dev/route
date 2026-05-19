@@ -1,6 +1,8 @@
 // ─── State ────────────────────────────────────────────────────────────────────
+const GOOGLE_MAPS_API_KEY = 'AIzaSyDzdc9GUQN6X2r8vw1_7kcVGRyvP5ZLoNM';
+
 const state = {
-  apiKey: localStorage.getItem('gmaps_api_key') || '',
+  apiKey: GOOGLE_MAPS_API_KEY,
   excelRows: [],
   addresses: [],      // {id, name, address, lat, lng, success}
   route: null,
@@ -14,34 +16,13 @@ const BACKEND = '/api';  // proxied via nginx
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  if (state.apiKey) {
-    document.getElementById('api-key-input').value = state.apiKey;
-  }
   setupDropZone();
   checkConfig();
 });
 
 async function checkConfig() {
-  try {
-    const res = await fetch(`${BACKEND}/config`);
-    const cfg = await res.json();
-    const key = cfg.apiKey || state.apiKey;
-    if (key) {
-      state.apiKey = key;
-      localStorage.setItem('gmaps_api_key', key);
-      setStatus('✅ API Key vorhanden', 'ok');
-      loadGoogleMaps(key);
-    } else {
-      setStatus('⚠️ Kein API Key', 'error');
-    }
-  } catch {
-    if (state.apiKey) {
-      setStatus('✅ API Key (lokal)', 'ok');
-      loadGoogleMaps(state.apiKey);
-    } else {
-      setStatus('⚠️ Backend nicht erreichbar', 'error');
-    }
-  }
+  setStatus('✅ API Key vorhanden', 'ok');
+  loadGoogleMaps(state.apiKey);
 }
 
 function setStatus(msg, cls) {
@@ -50,14 +31,6 @@ function setStatus(msg, cls) {
   el.className = cls;
 }
 
-function saveApiKey() {
-  const key = document.getElementById('api-key-input').value.trim();
-  if (!key) return alert('Bitte API Key eingeben');
-  state.apiKey = key;
-  localStorage.setItem('gmaps_api_key', key);
-  setStatus('✅ API Key gespeichert', 'ok');
-  if (!state.mapsLoaded) loadGoogleMaps(key);
-}
 
 function loadGoogleMaps(key) {
   if (state.mapsLoaded || document.getElementById('gmaps-script')) return;
