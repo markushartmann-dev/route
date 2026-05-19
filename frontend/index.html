@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Routenplaner</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <header>
+    <h1>🗺️ Routenplaner</h1>
+    <div id="api-status"></div>
+  </header>
+
+  <!-- Setup Panel -->
+  <div id="setup-panel" class="panel">
+    <div class="panel-grid">
+
+      <!-- Step 1: Settings -->
+      <div class="card" id="card-settings">
+        <h2>⚙️ Fahrzeug & Einstellungen</h2>
+        <div class="form-group">
+          <label>Startadresse (Heimatort)</label>
+          <input type="text" id="start-address" placeholder="z.B. Musterstraße 1, 12345 Berlin" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ø Geschwindigkeit (km/h)</label>
+            <input type="number" id="avg-speed" value="80" min="30" max="200" />
+          </div>
+          <div class="form-group">
+            <label>Max. Reichweite (km)</label>
+            <input type="number" id="max-range" value="400" min="50" max="1000" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fahrzeugtyp</label>
+            <select id="vehicle-type">
+              <option value="car">🚗 Verbrenner</option>
+              <option value="electric">⚡ Elektroauto</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Pausendauer (Min)</label>
+            <input type="number" id="break-duration" value="30" min="5" max="120" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Pause alle (km)</label>
+          <input type="number" id="break-interval" value="200" min="50" max="600" />
+        </div>
+        <div class="form-group">
+          <label>Google Maps API Key</label>
+          <input type="text" id="api-key-input" placeholder="AIza..." />
+          <button class="btn-sm" onclick="saveApiKey()">Speichern</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Excel Import -->
+      <div class="card" id="card-import">
+        <h2>📂 Excel importieren</h2>
+        <div class="drop-zone" id="drop-zone">
+          <div class="drop-icon">📄</div>
+          <p>Excel-Datei hier ablegen<br/>oder klicken zum Auswählen</p>
+          <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden />
+        </div>
+
+        <div id="column-mapping" class="hidden">
+          <h3>Spalten zuordnen</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Firmenname</label>
+              <select id="col-name"></select>
+            </div>
+            <div class="form-group">
+              <label>Straße</label>
+              <select id="col-street"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>PLZ</label>
+              <select id="col-zip"></select>
+            </div>
+            <div class="form-group">
+              <label>Stadt</label>
+              <select id="col-city"></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Oder: Vollständige Adresse (eine Spalte)</label>
+            <select id="col-full-address">
+              <option value="">-- Nicht verwenden --</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="processAddresses()">
+            📍 Adressen verarbeiten
+          </button>
+        </div>
+
+        <div id="import-progress" class="hidden">
+          <div class="progress-bar"><div id="progress-fill"></div></div>
+          <p id="progress-text">Verarbeite...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Address List -->
+    <div class="card" id="card-addresses" style="display:none">
+      <div class="card-header">
+        <h2>📋 Adressen (<span id="addr-count">0</span>)</h2>
+        <div class="card-actions">
+          <button class="btn-secondary" onclick="selectAll()">Alle auswählen</button>
+          <button class="btn-secondary" onclick="selectNone()">Keine</button>
+          <button class="btn-primary" onclick="buildRoute()">🗺️ Route berechnen</button>
+        </div>
+      </div>
+      <div id="address-list"></div>
+    </div>
+  </div>
+
+  <!-- Route Panel -->
+  <div id="route-panel" class="hidden">
+    <div class="panel-grid two-col">
+      <!-- Map -->
+      <div class="card map-card">
+        <div id="map"></div>
+        <div id="traffic-info">
+          <span id="traffic-badge" class="badge">🔄 Lade Verkehrsdaten...</span>
+        </div>
+      </div>
+
+      <!-- Route Details -->
+      <div class="card route-details">
+        <div class="card-header">
+          <h2>📍 Routendetails</h2>
+          <button class="btn-secondary" onclick="backToSetup()">← Zurück</button>
+        </div>
+
+        <div id="route-summary" class="route-summary"></div>
+
+        <div id="stop-list"></div>
+
+        <div class="route-actions">
+          <button class="btn-primary" onclick="openInGoogleMaps()">
+            🗺️ In Google Maps öffnen
+          </button>
+          <button class="btn-secondary" onclick="exportRoute()">
+            💾 Route exportieren
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading" class="hidden">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p id="loading-text">Berechne Route...</p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
