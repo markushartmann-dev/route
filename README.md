@@ -1,9 +1,9 @@
-# 🗺️ Routenplaner – Setup Guide for Synology NAS
+# 🗺️ Route Planner – Setup Guide for Synology NAS
 
 ## Step 1: Get a Google Maps API Key
 
 1. Go to: https://console.cloud.google.com/
-2. Create a new project (e.g. "Routenplaner")
+2. Create a new project (e.g. "Route Planner")
 3. Enable the following APIs:
    - **Maps JavaScript API**
    - **Geocoding API**
@@ -20,8 +20,8 @@
 ```bash
 ssh admin@YOUR-NAS-IP
 cd /volume2/docker
-git clone https://github.com/markushartmann-dev/route.git routeplaner
-cd routeplaner
+git clone https://github.com/markushartmann-dev/route.git route-planner
+cd route-planner
 ```
 
 ## Step 3: Start Docker
@@ -41,7 +41,7 @@ http://YOUR-NAS-IP:8081
 
 To pull the latest changes and restart:
 ```bash
-cd /volume2/docker/routeplaner
+cd /volume2/docker/route-planner
 git pull
 docker compose up --build -d
 ```
