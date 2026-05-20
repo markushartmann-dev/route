@@ -9,7 +9,6 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3001
-      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
     networks:
       - routeplaner
 
@@ -20,7 +19,7 @@ services:
     container_name: routeplaner-frontend
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "8081:80"
     depends_on:
       - backend
     networks:

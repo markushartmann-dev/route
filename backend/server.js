@@ -11,7 +11,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json());
 
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyDzdc9GUQN6X2r8vw1_7kcVGRyvP5ZLoNM';
 
 // Parse Excel file and extract addresses
 app.post('/api/import-excel', upload.single('file'), (req, res) => {
