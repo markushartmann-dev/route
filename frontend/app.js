@@ -803,6 +803,7 @@ async function buildRoute() {
   const vehicleType = document.getElementById('vehicle-type').value;
   const visitDuration = parseInt(document.getElementById('avg-visit-time').value) || 60;
   const wantFastfood = document.getElementById('fastfood-stop').checked;
+  const wantDKV      = document.getElementById('dkv-stop').checked;
 
   showLoading(t('loading-route'));
   let stops = buildStopsWithBreaks(startAddr, selected, maxRange, breakInterval, vehicleType);
@@ -814,6 +815,10 @@ async function buildRoute() {
     if (wantFastfood) {
       const ff = await findFastfoodNearMidpoint(selected);
       if (ff) stops.splice(Math.floor(stops.length / 2), 0, ff);
+    }
+    if (wantDKV) {
+      const dkv = await findDKVStation(selected);
+      if (dkv) stops.splice(Math.floor(stops.length * 0.75), 0, dkv);
     }
     await calculateRoute(stops, avgSpeed, breakDuration, vehicleType, visitDuration);
   } catch (err) {
@@ -871,6 +876,35 @@ function findFastfoodNearMidpoint(addresses) {
   });
 }
 
+function findDKVStation(addresses) {
+  const withCoords = addresses.filter(a => a.lat && a.lng);
+  if (!withCoords.length) return Promise.resolve(null);
+  const lat = withCoords.reduce((s, a) => s + parseFloat(a.lat), 0) / withCoords.length;
+  const lng = withCoords.reduce((s, a) => s + parseFloat(a.lng), 0) / withCoords.length;
+  const center = new google.maps.LatLng(lat, lng);
+  const service = new google.maps.places.PlacesService(state.map);
+  const DKV_BRANDS = ['aral', 'shell', 'total', 'esso', 'jet', 'hem', 'agip', 'eni', 'omv', 'q1', 'tamoil', 'avia', 'bft', 'orlen', 'westfalen', 'star', 'allguth', 'score', 'tankpoint'];
+  const search = keyword => new Promise(resolve => {
+    const req = { location: center, radius: 25000, type: 'gas_station' };
+    if (keyword) req.keyword = keyword;
+    service.nearbySearch(req, (results, status) =>
+      resolve(status === google.maps.places.PlacesServiceStatus.OK && results ? results : [])
+    );
+  });
+  return Promise.all([search('Autobahn Tankstelle'), search(null)]).then(([highway, general]) => {
+    const all = [...highway, ...general];
+    const p = all.find(r => DKV_BRANDS.some(b => r.name.toLowerCase().includes(b)));
+    if (!p) return null;
+    return {
+      type: 'dkv',
+      name: '⛽ ' + p.name + ' (DKV)',
+      address: p.vicinity,
+      lat: p.geometry.location.lat(),
+      lng: p.geometry.location.lng(),
+    };
+  });
+}
+
 function initMap() {
   state.map = new google.maps.Map(document.getElementById('map'), {
     zoom: 7, center: { lat: 51.1657, lng: 10.4515 }, mapTypeControl: false, streetViewControl: false
@@ -893,7 +927,7 @@ function updateTrafficBadge() {
 
 async function calculateRoute(stops, avgSpeed, breakDuration, vehicleType, visitDuration = 0) {
   const directionsService = new google.maps.DirectionsService();
-  const destinations = stops.filter(s => s.type === 'destination' || s.type === 'start' || s.type === 'fastfood');
+  const destinations = stops.filter(s => ['destination', 'start', 'fastfood', 'dkv'].includes(s.type));
   const waypoints = destinations.slice(1, -1).map(s => ({
     location: s.lat && s.lng ? new google.maps.LatLng(s.lat, s.lng) : s.address,
     stopover: true
@@ -971,8 +1005,9 @@ function renderRouteDetails() {
 
 function createStopEl({ type, name, address, meta }) {
   const div = document.createElement('div');
-  div.className = `stop-item ${type === 'break' ? 'break-stop' : type === 'start' ? 'start-stop' : type === 'fuel-stop' ? 'fuel-stop' : type === 'fastfood' ? 'fastfood-stop' : ''}`;
-  const icons = { start: '🏠', destination: '📍', break: '☕', 'fuel-stop': '⛽', fastfood: '🍔' };
+  const typeClass = { 'break': 'break-stop', 'start': 'start-stop', 'fuel-stop': 'fuel-stop', 'fastfood': 'fastfood-stop', 'dkv': 'dkv-stop' };
+  div.className = `stop-item ${typeClass[type] || ''}`;
+  const icons = { start: '🏠', destination: '📍', break: '☕', 'fuel-stop': '⛽', fastfood: '🍔', dkv: '⛽' };
   div.innerHTML = `
     <div class="stop-icon">${icons[type] || '📍'}</div>
     <div class="stop-info">
