@@ -842,25 +842,26 @@ function findFastfoodNearMidpoint(addresses) {
   const lat = withCoords.reduce((s, a) => s + parseFloat(a.lat), 0) / withCoords.length;
   const lng = withCoords.reduce((s, a) => s + parseFloat(a.lng), 0) / withCoords.length;
   const center = new google.maps.LatLng(lat, lng);
-  return new Promise(resolve => {
-    const service = new google.maps.places.PlacesService(document.createElement('div'));
+  const service = new google.maps.places.PlacesService(state.map);
+  const search = keyword => new Promise(resolve => {
     service.nearbySearch(
-      { location: center, radius: 10000, keyword: "McDonald's Burger King", type: 'restaurant' },
-      (results, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length) {
-          const p = results[0];
-          resolve({
-            type: 'fastfood',
-            name: '🍔 ' + p.name,
-            address: p.vicinity,
-            lat: p.geometry.location.lat(),
-            lng: p.geometry.location.lng(),
-          });
-        } else {
-          resolve(null);
-        }
-      }
+      { location: center, radius: 20000, keyword },
+      (results, status) => resolve(
+        status === google.maps.places.PlacesServiceStatus.OK && results && results.length
+          ? results[0] : null
+      )
     );
+  });
+  return Promise.all([search("McDonald's"), search('Burger King')]).then(([mc, bk]) => {
+    const p = mc || bk;
+    if (!p) return null;
+    return {
+      type: 'fastfood',
+      name: '🍔 ' + p.name,
+      address: p.vicinity,
+      lat: p.geometry.location.lat(),
+      lng: p.geometry.location.lng(),
+    };
   });
 }
 
