@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Route Planner</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="style.css" />
@@ -193,7 +193,8 @@
         <div id="route-summary" class="route-summary"></div>
         <div id="stop-list"></div>
         <div class="route-actions">
-          <button class="btn-primary" onclick="openInGoogleMaps()" data-i18n="route-open-maps">🗺️ In Google Maps öffnen</button>
+          <button class="btn-primary" onclick="openInGoogleMaps()">🗺️ Google Maps</button>
+          <button class="btn-secondary" onclick="openInAppleMaps()">🍎 Apple Maps</button>
           <button class="btn-secondary" onclick="exportRoute()" data-i18n="route-export">💾 Route exportieren</button>
           <button id="save-route-btn" class="btn-secondary hidden" onclick="saveCurrentRoute()">📅 Route speichern</button>
         </div>
