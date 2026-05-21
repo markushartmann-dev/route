@@ -414,11 +414,18 @@ function showAdminTab(tab) {
 async function loadLogs() {
   try {
     const res = await apiFetch('/admin/logs');
+    if (!res.ok) {
+      document.getElementById('logs-tbody').innerHTML =
+        '<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--danger,#ef4444)">' +
+        'Fehler ' + res.status + ' – Backend mit neuem server.js neu starten.</td></tr>';
+      if (document.getElementById('log-count')) document.getElementById('log-count').textContent = '';
+      return;
+    }
     const logs = await res.json();
-    renderLogs(logs);
+    renderLogs(Array.isArray(logs) ? logs : []);
   } catch (err) {
     document.getElementById('logs-tbody').innerHTML =
-      `<tr><td colspan="5" style="padding:16px;text-align:center">Fehler: ${escHtml(err.message)}</td></tr>`;
+      '<tr><td colspan="5" style="padding:16px;text-align:center">Fehler: ' + err.message + '</td></tr>';
   }
 }
 
