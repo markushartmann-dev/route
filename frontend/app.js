@@ -1,4 +1,4 @@
-// ─── Translations ─────────────────────────────────────────────────────────────
+﻿// ─── Translations ─────────────────────────────────────────────────────────────
 const TRANSLATIONS = {
   de: {
     'login-username': 'Benutzername',
@@ -288,16 +288,22 @@ function showApp() {
 function updateHeaderAuth() {
   const userEl = document.getElementById('header-user');
   const adminBtn = document.getElementById('admin-btn');
+  const routesBtn = document.getElementById('routes-btn');
+  const saveRouteBtn = document.getElementById('save-route-btn');
   const signInBtn = document.getElementById('signin-btn');
   const signOutBtn = document.getElementById('signout-btn');
   if (state.user) {
     userEl.textContent = '👤 ' + state.user.username;
     if (state.user.role === 'admin') adminBtn.classList.remove('hidden');
+    if (routesBtn) routesBtn.classList.remove('hidden');
+    if (saveRouteBtn) saveRouteBtn.classList.remove('hidden');
     signInBtn.classList.add('hidden');
     signOutBtn.classList.remove('hidden');
   } else {
     userEl.textContent = '';
     adminBtn.classList.add('hidden');
+    if (routesBtn) routesBtn.classList.add('hidden');
+    if (saveRouteBtn) saveRouteBtn.classList.add('hidden');
     signInBtn.classList.remove('hidden');
     signOutBtn.classList.add('hidden');
   }
@@ -1001,6 +1007,123 @@ function exportRoute() {
 function backToSetup() {
   document.getElementById('route-panel').classList.add('hidden');
   document.getElementById('setup-panel').classList.remove('hidden');
+}
+
+// ─── Saved Routes ─────────────────────────────────────────────────────────────
+async function openSavedRoutes() {
+  document.getElementById('routes-modal').classList.remove('hidden');
+  await loadRoutesList();
+}
+
+function closeSavedRoutes() {
+  document.getElementById('routes-modal').classList.add('hidden');
+}
+
+async function loadRoutesList() {
+  const content = document.getElementById('routes-list-content');
+  try {
+    const res = await apiFetch('/routes');
+    if (!res.ok) { content.innerHTML = '<p style="color:var(--danger,#ef4444);padding:16px">Fehler beim Laden.</p>'; return; }
+    const routes = await res.json();
+    if (!routes.length) {
+      content.innerHTML = '<p style="opacity:.6;text-align:center;padding:20px">Noch keine Routen gespeichert.</p>';
+      return;
+    }
+    content.innerHTML = routes.reverse().map(r => {
+      const d = new Date(r.createdAt);
+      const dateStr = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const h = Math.floor((r.summary.totalDuration || 0) / 60), m = (r.summary.totalDuration || 0) % 60;
+      const parts = [];
+      if (r.summary.totalDistance) parts.push(r.summary.totalDistance + ' km');
+      if (r.summary.totalDuration)  parts.push(h + 'h ' + m + 'm');
+      if (r.summary.destinationCount) parts.push(r.summary.destinationCount + ' Kunden');
+      return `<div class="saved-route-item">
+        <div class="saved-route-info">
+          <div class="saved-route-name">${escHtml(r.name)}</div>
+          <div class="saved-route-meta">${dateStr}${parts.length ? ' · ' + parts.join(' · ') : ''}</div>
+        </div>
+        <div class="saved-route-btns">
+          <button class="btn-primary" onclick="loadSavedRoute(${r.id})">▶ Laden</button>
+          <button class="btn-secondary" style="color:var(--danger,#ef4444)" onclick="deleteSavedRoute(${r.id})">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    content.innerHTML = '<p style="color:var(--danger,#ef4444);padding:16px">Fehler: ' + escHtml(err.message) + '</p>';
+  }
+}
+
+async function saveCurrentRoute() {
+  if (!state.route) return;
+  const name = prompt('Routenname (z.B. "Montag KW21"):');
+  if (name === null) return;
+  const settings = {
+    startAddress: document.getElementById('start-address').value.trim(),
+    avgSpeed: document.getElementById('avg-speed').value,
+    maxRange: document.getElementById('max-range').value,
+    breakDuration: document.getElementById('break-duration').value,
+    breakInterval: document.getElementById('break-interval').value,
+    vehicleType: document.getElementById('vehicle-type').value,
+    visitDuration: document.getElementById('avg-visit-time').value,
+    fastfoodStop: document.getElementById('fastfood-stop').checked,
+  };
+  const addresses = state.addresses.filter(a => a.selected);
+  const summary = {
+    totalDistance: state.route.totalDistance,
+    totalDuration: state.route.totalDuration,
+    destinationCount: state.route.destinationCount || addresses.length,
+  };
+  try {
+    const res = await apiFetch('/routes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.trim() || 'Route ' + new Date().toLocaleDateString('de-DE'), addresses, settings, summary })
+    });
+    if (!res.ok) { alert('Fehler beim Speichern.'); return; }
+    const btn = document.getElementById('save-route-btn');
+    if (btn) { const orig = btn.textContent; btn.textContent = '✓ Gespeichert!'; setTimeout(() => btn.textContent = orig, 2000); }
+  } catch (err) { alert('Fehler: ' + err.message); }
+}
+
+async function loadSavedRoute(id) {
+  try {
+    showLoading('Route laden...');
+    const res = await apiFetch('/routes/' + id);
+    if (!res.ok) { hideLoading(); alert('Route nicht gefunden.'); return; }
+    const saved = await res.json();
+    const s = saved.settings;
+    document.getElementById('start-address').value  = s.startAddress  || '';
+    document.getElementById('avg-speed').value       = s.avgSpeed       || 80;
+    document.getElementById('max-range').value       = s.maxRange       || 400;
+    document.getElementById('break-duration').value  = s.breakDuration  || 30;
+    document.getElementById('break-interval').value  = s.breakInterval  || 200;
+    document.getElementById('vehicle-type').value    = s.vehicleType    || 'car';
+    document.getElementById('avg-visit-time').value  = s.visitDuration  || 60;
+    document.getElementById('fastfood-stop').checked = s.fastfoodStop   || false;
+    state.addresses = saved.addresses.map(a => ({ ...a, selected: true }));
+    state.activeCities = new Set();
+    state.fileKey = 'saved:' + id;
+    closeSavedRoutes();
+    document.getElementById('route-panel').classList.add('hidden');
+    document.getElementById('setup-panel').classList.remove('hidden');
+    document.getElementById('card-addresses').style.display = '';
+    document.getElementById('addr-count').textContent = state.addresses.length;
+    renderAddressList();
+    hideLoading();
+    await buildRoute();
+  } catch (err) {
+    hideLoading();
+    alert('Fehler beim Laden: ' + err.message);
+  }
+}
+
+async function deleteSavedRoute(id) {
+  if (!confirm('Route wirklich löschen?')) return;
+  try {
+    const res = await apiFetch('/routes/' + id, { method: 'DELETE' });
+    if (!res.ok) { alert('Fehler beim Löschen.'); return; }
+    await loadRoutesList();
+  } catch (err) { alert('Fehler: ' + err.message); }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
