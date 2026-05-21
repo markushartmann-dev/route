@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,15 +16,15 @@
     <h1>Route Planner</h1>
     <form id="login-form" onsubmit="submitLogin(event)">
       <div class="form-group">
-        <label>Username</label>
+        <label data-i18n="login-username">Benutzername</label>
         <input type="text" id="login-username" autocomplete="username" required />
       </div>
       <div class="form-group">
-        <label>Password</label>
+        <label data-i18n="login-password">Passwort</label>
         <input type="password" id="login-password" autocomplete="current-password" required />
       </div>
       <p id="login-error" class="login-error hidden"></p>
-      <button type="submit" class="btn-primary" style="width:100%">Sign in</button>
+      <button type="submit" class="btn-primary" style="width:100%" data-i18n="login-submit">Anmelden</button>
     </form>
   </div>
 </div>
@@ -35,13 +35,14 @@
 <div id="app">
   <header>
     <h1>🗺️ Route Planner</h1>
-    <div style="display:flex;align-items:center;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <div id="api-status"></div>
-      <button id="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
-      <button id="admin-btn" class="btn-header hidden" onclick="openAdmin()">⚙️ Admin</button>
+      <button id="theme-toggle" onclick="toggleTheme()">🌙 Dunkel</button>
+      <button id="lang-btn" class="btn-header" onclick="toggleLang()">🇬🇧 EN</button>
+      <button id="admin-btn" class="btn-header hidden" onclick="openAdmin()" data-i18n="admin-btn">⚙️ Admin</button>
       <span id="header-user" class="header-user"></span>
-      <button id="signin-btn" class="btn-header" onclick="showLogin()">Sign in</button>
-      <button id="signout-btn" class="btn-header hidden" onclick="logout()">Sign out</button>
+      <button id="signin-btn" class="btn-header" onclick="showLogin()" data-i18n="signin-btn">Anmelden</button>
+      <button id="signout-btn" class="btn-header hidden" onclick="logout()" data-i18n="signout-btn">Abmelden</button>
     </div>
   </header>
 
@@ -50,95 +51,93 @@
     <div class="panel-grid">
 
       <div class="card" id="card-settings">
-        <h2>⚙️ Vehicle & Settings</h2>
+        <h2 data-i18n="settings-title">⚙️ Fahrzeug & Einstellungen</h2>
         <div class="form-group">
-          <label>Start Address (Home)</label>
-          <input type="text" id="start-address" placeholder="e.g. Main Street 1, 12345 Berlin" />
+          <label data-i18n="settings-start-label">Startadresse (Heimatort)</label>
+          <input type="text" id="start-address" data-i18n-placeholder="settings-start-placeholder" placeholder="z.B. Musterstraße 1, 12345 Berlin" />
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Avg. Speed (km/h)</label>
+            <label data-i18n="settings-speed-label">Ø Geschwindigkeit (km/h)</label>
             <input type="number" id="avg-speed" value="80" min="30" max="200" />
           </div>
           <div class="form-group">
-            <label>Max. Range (km)</label>
+            <label data-i18n="settings-range-label">Max. Reichweite (km)</label>
             <input type="number" id="max-range" value="400" min="50" max="1000" />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Vehicle Type</label>
+            <label data-i18n="settings-vehicle-label">Fahrzeugtyp</label>
             <select id="vehicle-type">
-              <option value="car">🚗 Combustion</option>
-              <option value="electric">⚡ Electric</option>
+              <option value="car" data-i18n="settings-combustion">🚗 Verbrenner</option>
+              <option value="electric" data-i18n="settings-electric">⚡ Elektroauto</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Break Duration (min)</label>
+            <label data-i18n="settings-break-duration">Pausendauer (Min)</label>
             <input type="number" id="break-duration" value="30" min="5" max="120" />
           </div>
         </div>
         <div class="form-group">
-          <label>Break every (km)</label>
+          <label data-i18n="settings-break-interval">Pause alle (km)</label>
           <input type="number" id="break-interval" value="200" min="50" max="600" />
         </div>
       </div>
 
       <div class="card" id="card-import">
-        <h2>📂 Import Excel</h2>
+        <h2 data-i18n="import-title">📂 Excel importieren</h2>
         <div class="drop-zone" id="drop-zone">
           <div class="drop-icon">📄</div>
-          <p>Drop Excel file here<br/>or click to select</p>
+          <p><span data-i18n="import-drop-line1">Excel-Datei hier ablegen</span><br/><span data-i18n="import-drop-line2">oder klicken zum Auswählen</span></p>
           <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden />
         </div>
 
         <div id="column-mapping" class="hidden">
-          <h3>Map columns</h3>
+          <h3 data-i18n="import-map-title">Spalten zuordnen</h3>
           <div class="form-row">
             <div class="form-group">
-              <label>Company name</label>
+              <label data-i18n="import-col-name">Firmenname</label>
               <select id="col-name"></select>
             </div>
             <div class="form-group">
-              <label>Street</label>
+              <label data-i18n="import-col-street">Straße</label>
               <select id="col-street"></select>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>ZIP</label>
+              <label data-i18n="import-col-zip">PLZ</label>
               <select id="col-zip"></select>
             </div>
             <div class="form-group">
-              <label>City</label>
+              <label data-i18n="import-col-city">Stadt</label>
               <select id="col-city"></select>
             </div>
           </div>
           <div class="form-group">
-            <label>Or: Full address (single column)</label>
-            <select id="col-full-address">
-              <option value="">-- Do not use --</option>
-            </select>
+            <label data-i18n="import-col-full">Oder: Vollständige Adresse (eine Spalte)</label>
+            <select id="col-full-address"></select>
           </div>
-          <button class="btn-primary" onclick="processAddresses()">
-            📍 Process addresses
+          <button class="btn-primary" onclick="processAddresses()" data-i18n="import-process-btn">
+            📍 Adressen verarbeiten
           </button>
         </div>
 
         <div id="import-progress" class="hidden">
           <div class="progress-bar"><div id="progress-fill"></div></div>
-          <p id="progress-text">Processing...</p>
+          <p id="progress-text" data-i18n="import-processing">Verarbeite...</p>
         </div>
       </div>
     </div>
 
     <div class="card" id="card-addresses" style="display:none">
       <div class="card-header">
-        <h2>📋 Addresses (<span id="addr-count">0</span>)</h2>
+        <h2><span data-i18n="addr-title">📋 Adressen</span> (<span id="addr-count">0</span>)</h2>
         <div class="card-actions">
-          <button class="btn-secondary" onclick="selectAll()">Select all</button>
-          <button class="btn-secondary" onclick="selectNone()">None</button>
-          <button class="btn-primary" onclick="buildRoute()">🗺️ Calculate route</button>
+          <button class="btn-secondary" onclick="selectAll()" data-i18n="addr-select-all">Alle auswählen</button>
+          <button class="btn-secondary" onclick="selectNone()" data-i18n="addr-select-none">Keine</button>
+          <button class="btn-primary" onclick="buildRoute()" data-i18n="addr-build-route">🗺️ Route berechnen</button>
         </div>
       </div>
       <div id="address-list"></div>
@@ -151,20 +150,20 @@
       <div class="card map-card">
         <div id="map"></div>
         <div id="traffic-info">
-          <span id="traffic-badge" class="badge">🔄 Loading traffic data...</span>
+          <span id="traffic-badge" class="badge" data-i18n="traffic-loading">🔄 Lade Verkehrsdaten...</span>
         </div>
       </div>
 
       <div class="card route-details">
         <div class="card-header">
-          <h2>📍 Route Details</h2>
-          <button class="btn-secondary" onclick="backToSetup()">← Back</button>
+          <h2 data-i18n="route-title">📍 Routendetails</h2>
+          <button class="btn-secondary" onclick="backToSetup()" data-i18n="route-back">← Zurück</button>
         </div>
         <div id="route-summary" class="route-summary"></div>
         <div id="stop-list"></div>
         <div class="route-actions">
-          <button class="btn-primary" onclick="openInGoogleMaps()">🗺️ Open in Google Maps</button>
-          <button class="btn-secondary" onclick="exportRoute()">💾 Export route</button>
+          <button class="btn-primary" onclick="openInGoogleMaps()" data-i18n="route-open-maps">🗺️ In Google Maps öffnen</button>
+          <button class="btn-secondary" onclick="exportRoute()" data-i18n="route-export">💾 Route exportieren</button>
         </div>
       </div>
     </div>
@@ -177,41 +176,45 @@
 <div id="admin-modal" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-header">
-      <h2>⚙️ User Management</h2>
+      <h2 data-i18n="admin-title">⚙️ Benutzerverwaltung</h2>
       <button class="modal-close" onclick="closeAdmin()">✕</button>
     </div>
-
     <div class="modal-body">
       <table class="user-table" id="user-table">
         <thead>
-          <tr><th>Username</th><th>Role</th><th>Created</th><th></th></tr>
+          <tr>
+            <th data-i18n="admin-col-username">Benutzername</th>
+            <th data-i18n="admin-col-role">Rolle</th>
+            <th data-i18n="admin-col-created">Erstellt</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody id="user-tbody"></tbody>
       </table>
 
       <div class="modal-section">
-        <h3 id="user-form-title">Add User</h3>
+        <h3 id="user-form-title" data-i18n="admin-form-add">Benutzer hinzufügen</h3>
         <div class="form-row">
           <div class="form-group">
-            <label>Username</label>
+            <label data-i18n="admin-username-label">Benutzername</label>
             <input type="text" id="uf-username" />
           </div>
           <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="uf-password" placeholder="Leave blank to keep" />
+            <label data-i18n="admin-password-label">Passwort</label>
+            <input type="password" id="uf-password" data-i18n-placeholder="admin-password-placeholder" placeholder="Leer lassen zum Behalten" />
           </div>
           <div class="form-group">
-            <label>Role</label>
+            <label data-i18n="admin-role-label">Rolle</label>
             <select id="uf-role">
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+              <option value="user" data-i18n="role-user">Benutzer</option>
+              <option value="admin" data-i18n="role-admin">Admin</option>
             </select>
           </div>
         </div>
         <input type="hidden" id="uf-id" />
         <div style="display:flex;gap:8px;">
-          <button class="btn-primary" onclick="saveUser()">Save</button>
-          <button class="btn-secondary" onclick="resetUserForm()">Cancel</button>
+          <button class="btn-primary" onclick="saveUser()" data-i18n="admin-save">Speichern</button>
+          <button class="btn-secondary" onclick="resetUserForm()" data-i18n="admin-cancel">Abbrechen</button>
         </div>
         <p id="user-form-error" class="login-error hidden"></p>
       </div>
@@ -223,7 +226,7 @@
 <div id="loading" class="hidden">
   <div class="loading-box">
     <div class="spinner"></div>
-    <p id="loading-text">Calculating route...</p>
+    <p id="loading-text" data-i18n="loading-default">Lade...</p>
   </div>
 </div>
 
