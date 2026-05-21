@@ -180,37 +180,72 @@
       <button class="modal-close" onclick="closeAdmin()">✕</button>
     </div>
     <div class="modal-body">
-      <table class="user-table" id="user-table">
-        <thead>
-          <tr>
-            <th data-i18n="admin-col-username">Benutzername</th>
-            <th data-i18n="admin-col-role">Rolle</th>
-            <th data-i18n="admin-col-created">Erstellt</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="user-tbody"></tbody>
-      </table>
+      <div class="admin-tabs">
+        <button class="admin-tab active" id="tab-users" onclick="showAdminTab('users')">&#128101; Benutzer</button>
+        <button class="admin-tab" id="tab-logs"  onclick="showAdminTab('logs')">&#128203; Protokoll</button>
+      </div>
 
-      <div class="modal-section">
-        <h3 id="user-form-title" data-i18n="admin-form-add">Benutzer hinzufügen</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label data-i18n="admin-username-label">Benutzername</label>
-            <input type="text" id="uf-username" />
+      <div id="admin-tab-users">
+        <table class="user-table" id="user-table">
+          <thead>
+            <tr>
+              <th data-i18n="admin-col-username">Benutzername</th>
+              <th data-i18n="admin-col-role">Rolle</th>
+              <th data-i18n="admin-col-created">Erstellt</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="user-tbody"></tbody>
+        </table>
+        <div class="modal-section">
+          <h3 id="user-form-title" data-i18n="admin-form-add">Benutzer hinzufügen</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label data-i18n="admin-username-label">Benutzername</label>
+              <input type="text" id="uf-username" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="admin-password-label">Passwort</label>
+              <input type="password" id="uf-password" placeholder="Leer lassen zum Behalten" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="admin-role-label">Rolle</label>
+              <select id="uf-role">
+                <option value="user" data-i18n="role-user">Benutzer</option>
+                <option value="admin" data-i18n="role-admin">Admin</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group">
-            <label data-i18n="admin-password-label">Passwort</label>
-            <input type="password" id="uf-password" data-i18n-placeholder="admin-password-placeholder" placeholder="Leer lassen zum Behalten" />
+          <input type="hidden" id="uf-id" />
+          <div style="display:flex;gap:8px;">
+            <button class="btn-primary" onclick="saveUser()">Speichern</button>
+            <button class="btn-secondary" onclick="resetUserForm()">Abbrechen</button>
           </div>
-          <div class="form-group">
-            <label data-i18n="admin-role-label">Rolle</label>
-            <select id="uf-role">
-              <option value="user" data-i18n="role-user">Benutzer</option>
-              <option value="admin" data-i18n="role-admin">Admin</option>
-            </select>
-          </div>
+          <p id="user-form-error" class="login-error hidden"></p>
         </div>
+      </div>
+
+      <div id="admin-tab-logs" class="hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span id="log-count" style="font-size:13px;opacity:.7"></span>
+          <button class="btn-secondary" onclick="clearLogs()">&#128465; Leeren</button>
+        </div>
+        <div style="overflow-x:auto;max-height:55vh;overflow-y:auto">
+          <table class="user-table" id="logs-table">
+            <thead>
+              <tr>
+                <th>Zeitpunkt</th>
+                <th>Benutzer</th>
+                <th>Aktion</th>
+                <th>Details</th>
+                <th>Dauer</th>
+              </tr>
+            </thead>
+            <tbody id="logs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
         <input type="hidden" id="uf-id" />
         <div style="display:flex;gap:8px;">
           <button class="btn-primary" onclick="saveUser()" data-i18n="admin-save">Speichern</button>
