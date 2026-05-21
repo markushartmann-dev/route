@@ -17,7 +17,9 @@ app.use(express.json());
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDzdc9GUQN6X2r8vw1_7kcVGRyvP5ZLoNM';
 const JWT_SECRET = process.env.JWT_SECRET || 'route-planner-change-me';
-const USERS_FILE = path.join('/app/data', 'users.json');
+const DATA_DIR = '/app/data';
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const LOGS_FILE  = path.join(DATA_DIR, 'logs.json');
 
 // ─── User Storage ─────────────────────────────────────────────────────────────
 function readUsers() {
@@ -26,37 +28,50 @@ function readUsers() {
       const dir = path.dirname(USERS_FILE);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const admin = {
-        id: 1,
-        username: 'admin',
+        id: 1, username: 'admin',
         password: bcrypt.hashSync('admin123', 10),
-        role: 'admin',
-        createdAt: new Date().toISOString()
+        role: 'admin', createdAt: new Date().toISOString()
       };
       fs.writeFileSync(USERS_FILE, JSON.stringify([admin], null, 2));
     }
     return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-  } catch (err) {
-    console.error('Error reading users:', err);
-    return [];
-  }
+  } catch (err) { console.error('Error reading users:', err); return []; }
 }
-
 function writeUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+// ─── Activity Log ─────────────────────────────────────────────────────────────
+function readLogs() {
+  try {
+    if (!fs.existsSync(LOGS_FILE)) return [];
+    return JSON.parse(fs.readFileSync(LOGS_FILE, 'utf8'));
+  } catch { return []; }
+}
+function writeLogs(logs) {
+  fs.writeFileSync(LOGS_FILE, JSON.stringify(logs, null, 2));
+}
+function logAction(user, action, details = {}) {
+  const logs = readLogs();
+  logs.push({ id: Date.now() + Math.random(), timestamp: new Date().toISOString(), user: user || 'Anonym', action, ...details });
+  if (logs.length > 2000) logs.splice(0, logs.length - 2000);
+  writeLogs(logs);
+}
+function getReqUser(req) {
+  try {
+    const token = (req.headers.authorization || '').split(' ')[1];
+    if (!token) return 'Anonym';
+    return jwt.verify(token, JWT_SECRET).username;
+  } catch { return 'Anonym'; }
 }
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
   const token = (req.headers.authorization || '').split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Not authenticated' });
-  try {
-    req.user = jwt.verify(token, JWT_SECRET);
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
-  }
+  try { req.user = jwt.verify(token, JWT_SECRET); next(); }
+  catch { res.status(401).json({ error: 'Invalid token' }); }
 }
-
 function requireAdmin(req, res, next) {
   requireAuth(req, res, () => {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin required' });
@@ -70,14 +85,13 @@ app.post('/api/auth/login', (req, res) => {
   if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
   const users = readUsers();
   const user = users.find(u => u.username === username);
-  if (!user || !bcrypt.compareSync(password, user.password)) {
+  if (!user || !bcrypt.compareSync(password, user.password))
     return res.status(401).json({ error: 'Invalid credentials' });
-  }
   const token = jwt.sign(
     { id: user.id, username: user.username, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '8h' }
+    JWT_SECRET, { expiresIn: '8h' }
   );
+  logAction(user.username, 'login');
   res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
 });
 
@@ -89,25 +103,21 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 app.get('/api/admin/users', requireAdmin, (req, res) => {
   res.json(readUsers().map(({ password, ...u }) => u));
 });
-
 app.post('/api/admin/users', requireAdmin, (req, res) => {
   const { username, password, role } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
   const users = readUsers();
   if (users.find(u => u.username === username)) return res.status(400).json({ error: 'Username already taken' });
   const newUser = {
-    id: Math.max(0, ...users.map(u => u.id)) + 1,
-    username,
+    id: Math.max(0, ...users.map(u => u.id)) + 1, username,
     password: bcrypt.hashSync(password, 10),
     role: role === 'admin' ? 'admin' : 'user',
     createdAt: new Date().toISOString()
   };
-  users.push(newUser);
-  writeUsers(users);
+  users.push(newUser); writeUsers(users);
   const { password: _, ...safe } = newUser;
   res.json(safe);
 });
-
 app.put('/api/admin/users/:id', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
   const { username, password, role } = req.body;
@@ -121,20 +131,27 @@ app.put('/api/admin/users/:id', requireAdmin, (req, res) => {
   const { password: _, ...safe } = users[idx];
   res.json(safe);
 });
-
 app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id);
   const users = readUsers();
   const target = users.find(u => u.id === id);
   if (!target) return res.status(404).json({ error: 'User not found' });
-  if (target.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) {
+  if (target.role === 'admin' && users.filter(u => u.role === 'admin').length === 1)
     return res.status(400).json({ error: 'Cannot delete last admin' });
-  }
   writeUsers(users.filter(u => u.id !== id));
   res.json({ ok: true });
 });
 
-// ─── Protected API Routes ─────────────────────────────────────────────────────
+// ─── Admin Log Routes ─────────────────────────────────────────────────────────
+app.get('/api/admin/logs', requireAdmin, (req, res) => {
+  res.json(readLogs().reverse());
+});
+app.delete('/api/admin/logs', requireAdmin, (req, res) => {
+  writeLogs([]);
+  res.json({ ok: true });
+});
+
+// ─── API Routes ───────────────────────────────────────────────────────────────
 app.post('/api/import-excel', upload.single('file'), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -142,42 +159,33 @@ app.post('/api/import-excel', upload.single('file'), (req, res) => {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
     if (rows.length === 0) return res.status(400).json({ error: 'Excel file is empty' });
+    logAction(getReqUser(req), 'import', { filename: req.file.originalname, rows: rows.length });
     res.json({ columns: Object.keys(rows[0]), rows, preview: rows.slice(0, 5) });
-  } catch (err) {
-    res.status(500).json({ error: 'Error reading Excel file: ' + err.message });
-  }
+  } catch (err) { res.status(500).json({ error: 'Error reading Excel file: ' + err.message }); }
 });
 
 app.post('/api/geocode', async (req, res) => {
   const { address } = req.body;
   if (!address) return res.status(400).json({ error: 'Address missing' });
   try {
-    const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-      params: { address, key: GOOGLE_MAPS_API_KEY, language: 'de', region: 'de' }
-    });
-    if (response.data.status !== 'OK') {
+    const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json',
+      { params: { address, key: GOOGLE_MAPS_API_KEY, language: 'de', region: 'de' } });
+    if (response.data.status !== 'OK')
       return res.status(404).json({ error: 'Address not found', status: response.data.status });
-    }
     const result = response.data.results[0];
-    res.json({
-      formatted_address: result.formatted_address,
-      lat: result.geometry.location.lat,
-      lng: result.geometry.location.lng
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Geocoding error: ' + err.message });
-  }
+    res.json({ formatted_address: result.formatted_address, lat: result.geometry.location.lat, lng: result.geometry.location.lng });
+  } catch (err) { res.status(500).json({ error: 'Geocoding error: ' + err.message }); }
 });
 
 app.post('/api/geocode-batch', async (req, res) => {
   const { addresses } = req.body;
   if (!Array.isArray(addresses)) return res.status(400).json({ error: 'Addresses array missing' });
+  const start = Date.now();
   const results = [];
   for (const item of addresses) {
     try {
-      const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-        params: { address: item.address, key: GOOGLE_MAPS_API_KEY, language: 'de', region: 'de' }
-      });
+      const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json',
+        { params: { address: item.address, key: GOOGLE_MAPS_API_KEY, language: 'de', region: 'de' } });
       if (response.data.status === 'OK') {
         const r = response.data.results[0];
         results.push({ ...item, formatted_address: r.formatted_address, lat: r.geometry.location.lat, lng: r.geometry.location.lng, success: true });
@@ -185,10 +193,9 @@ app.post('/api/geocode-batch', async (req, res) => {
         results.push({ ...item, success: false, error: response.data.status });
       }
       await new Promise(r => setTimeout(r, 100));
-    } catch (err) {
-      results.push({ ...item, success: false, error: err.message });
-    }
+    } catch (err) { results.push({ ...item, success: false, error: err.message }); }
   }
+  logAction(getReqUser(req), 'geocode', { count: addresses.length, duration_ms: Date.now() - start });
   res.json({ results });
 });
 
