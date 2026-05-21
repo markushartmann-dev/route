@@ -239,6 +239,7 @@ const state = {
   directionsRenderer: null,
   trafficLayer: null,
   mapsLoaded: false,
+  homeAddress: '',
 };
 
 const BACKEND = '/api';
@@ -247,7 +248,7 @@ const BACKEND = '/api';
 window.addEventListener('DOMContentLoaded', () => {
   applyTheme(localStorage.getItem('theme') || 'light');
   applyLang(state.lang);
-  if (state.token) verifyToken();
+  if (state.token) { verifyToken(); loadHomeAddress(); }
   showApp();
 });
 
@@ -322,6 +323,7 @@ async function submitLogin(e) {
     localStorage.setItem('user', JSON.stringify(state.user));
     hideLogin();
     updateHeaderAuth();
+    loadHomeAddress();
   } catch {
     errEl.textContent = t('alert-connection-error');
     errEl.classList.remove('hidden');
@@ -336,8 +338,57 @@ function logout() {
 function clearAuth() {
   state.token = '';
   state.user = null;
+  state.homeAddress = '';
+  updateHomeAddressUI();
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+}
+
+
+// ─── Home Address ─────────────────────────────────────────────────────────────
+async function loadHomeAddress() {
+  if (!state.token) return;
+  try {
+    const res = await apiFetch('/profile');
+    if (!res.ok) return;
+    const user = await res.json();
+    state.homeAddress = user.homeAddress || '';
+    updateHomeAddressUI();
+  } catch {}
+}
+
+function updateHomeAddressUI() {
+  const dl = document.getElementById('home-addr-list');
+  const useBtn = document.getElementById('use-home-addr-btn');
+  const saveBtn = document.getElementById('save-home-addr-btn');
+  if (dl) {
+    dl.innerHTML = state.homeAddress
+      ? '<option value="' + state.homeAddress.replace(/"/g, '&quot;') + '">&#127968; Heimatadresse</option>'
+      : '';
+  }
+  if (useBtn) useBtn.style.display = state.homeAddress && state.token ? '' : 'none';
+  if (saveBtn) saveBtn.style.display = state.token ? '' : 'none';
+}
+
+function useHomeAddress() {
+  if (state.homeAddress) document.getElementById('start-address').value = state.homeAddress;
+}
+
+async function saveHomeAddress() {
+  const addr = document.getElementById('start-address').value.trim();
+  if (!addr) return alert(t('alert-enter-start'));
+  try {
+    const res = await apiFetch('/profile/home-address', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ homeAddress: addr })
+    });
+    if (!res.ok) return;
+    state.homeAddress = addr;
+    updateHomeAddressUI();
+    const btn = document.getElementById('save-home-addr-btn');
+    if (btn) { const orig = btn.textContent; btn.textContent = '✓ Gespeichert!'; setTimeout(() => btn.textContent = orig, 2000); }
+  } catch {}
 }
 
 function apiFetch(path, options = {}) {
