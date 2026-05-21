@@ -299,7 +299,7 @@ input:focus, select:focus {
   padding: 16px;
   margin-bottom: 16px;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: 12px;
   text-align: center;
 }
@@ -607,4 +607,84 @@ h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; color: var(--tex
 .saved-route-name { font-weight: 600; font-size: 15px; }
 .saved-route-meta { font-size: 12px; opacity: .6; margin-top: 2px; }
 .saved-route-btns { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ─── Mobile / iPhone ────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Safe-area for notch & home bar */
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Header */
+  header {
+    padding: 12px 16px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  header h1 { font-size: 1.1rem; }
+  header > div { gap: 6px; }
+  .btn-header { padding: 6px 10px; font-size: 0.78rem; min-height: 36px; }
+  #api-status { display: none; }
+
+  /* App container */
+  #app { padding: 12px; }
+
+  /* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
+  input[type="text"],
+  input[type="number"],
+  input[type="password"],
+  select { font-size: 16px !important; }
+
+  /* Cards */
+  .card { padding: 16px; border-radius: 10px; }
+
+  /* Form rows stack on small screens */
+  .form-row { grid-template-columns: 1fr; gap: 0; }
+
+  /* Touch targets */
+  .btn-primary, .btn-secondary { min-height: 44px; }
+
+  /* Route panel: stack map + details */
+  .panel-grid.two-col { grid-template-columns: 1fr; }
+
+  /* Map */
+  #map { height: 260px; }
+  .route-details { max-height: none; overflow-y: visible; }
+
+  /* Route actions: full width buttons */
+  .route-actions { gap: 8px; }
+  .route-actions button { width: 100%; }
+
+  /* Stop list */
+  .stop-item { padding: 8px 10px; }
+
+  /* Address list */
+  #address-list { max-height: 280px; }
+
+  /* Modal */
+  .modal-overlay { align-items: flex-end; }
+  .modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    margin: 0;
+  }
+  .modal-header { padding: 16px 20px; }
+  .modal-body { padding: 16px 20px; gap: 16px; }
+
+  /* Login */
+  .login-box { padding: 28px 20px; margin: 0 16px; }
+
+  /* Drop zone */
+  .drop-zone { padding: 28px 16px; }
+
+  /* Card addresses header */
+  .card-header { flex-direction: column; align-items: flex-start; }
+  .card-actions { flex-wrap: wrap; width: 100%; }
+  .card-actions button { flex: 1; min-width: 80px; }
+}
 
