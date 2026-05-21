@@ -562,3 +562,29 @@ h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; color: var(--tex
 .btn-table:hover { background: var(--bg-item-hover); }
 .btn-table.danger { background: #fee2e2; color: #dc2626; }
 .btn-table.danger:hover { background: #fecaca; }
+
+/* ─── Admin Tabs ─────────────────────────────────────────────────────────── */
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--border, #e2e8f0);
+  margin-bottom: 16px;
+}
+.admin-tab {
+  padding: 8px 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted, #64748b);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: 14px;
+  border-radius: 4px 4px 0 0;
+  transition: color .15s;
+}
+.admin-tab:hover { color: var(--primary, #3b82f6); }
+.admin-tab.active {
+  color: var(--primary, #3b82f6);
+  border-bottom-color: var(--primary, #3b82f6);
+  font-weight: 600;
+}
