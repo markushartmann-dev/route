@@ -203,5 +203,25 @@ app.get('/api/config', (req, res) => {
   res.json({ hasApiKey: !!GOOGLE_MAPS_API_KEY, apiKey: GOOGLE_MAPS_API_KEY || null });
 });
 
+
+// ─── Profile Routes ───────────────────────────────────────────────────────────
+app.get('/api/profile', requireAuth, (req, res) => {
+  const users = readUsers();
+  const user = users.find(u => u.id === req.user.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const { password, ...safe } = user;
+  res.json(safe);
+});
+
+app.put('/api/profile/home-address', requireAuth, (req, res) => {
+  const { homeAddress } = req.body;
+  const users = readUsers();
+  const idx = users.findIndex(u => u.id === req.user.id);
+  if (idx === -1) return res.status(404).json({ error: 'User not found' });
+  users[idx].homeAddress = homeAddress || '';
+  writeUsers(users);
+  res.json({ ok: true, homeAddress: users[idx].homeAddress });
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
