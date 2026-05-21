@@ -53,8 +53,21 @@
       <div class="card" id="card-settings">
         <h2 data-i18n="settings-title">⚙️ Fahrzeug & Einstellungen</h2>
         <div class="form-group">
+        <div class="form-group">
           <label data-i18n="settings-start-label">Startadresse (Heimatort)</label>
-          <input type="text" id="start-address" data-i18n-placeholder="settings-start-placeholder" placeholder="z.B. Musterstraße 1, 12345 Berlin" />
+          <div style="display:flex;gap:6px;align-items:stretch">
+            <input type="text" id="start-address" list="home-addr-list" style="flex:1"
+                   data-i18n-placeholder="settings-start-placeholder"
+                   placeholder="z.B. Musterstr. 1, 12345 Berlin" />
+            <datalist id="home-addr-list"></datalist>
+            <button id="use-home-addr-btn" class="btn-secondary" onclick="useHomeAddress()"
+                    title="Gespeicherte Heimatadresse einfügen"
+                    style="display:none;white-space:nowrap;padding:8px 10px">🏠</button>
+          </div>
+          <button id="save-home-addr-btn" onclick="saveHomeAddress()"
+                  style="display:none;margin-top:5px;font-size:12px;padding:3px 8px;border:1px dashed var(--border);border-radius:6px;background:none;cursor:pointer;color:var(--text-muted)">
+            💾 Als Heimatadresse speichern
+          </button>
         </div>
         <div class="form-row">
           <div class="form-group">
