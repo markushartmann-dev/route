@@ -2,7 +2,8 @@
 const state = {
   apiKey: '',
   excelRows: [],
-  addresses: [],      // {id, name, address, lat, lng, success}
+  addresses: [],      // {id, name, address, lat, lng, success, city}
+  activeCities: new Set(),
   route: null,
   map: null,
   directionsRenderer: null,
@@ -138,7 +139,8 @@ async function processAddresses() {
     return {
       id: i,
       name: row[colName] || `Eintrag ${i+1}`,
-      address: address.trim()
+      address: address.trim(),
+      city: (row[colCity] || row[colFull] || '').trim()
     };
   }).filter(item => item.address);
 
@@ -160,7 +162,8 @@ async function processAddresses() {
 
     state.addresses = data.results.map(r => ({
       ...r,
-      selected: r.success
+      selected: r.success,
+      city: r.city || ''
     }));
 
     renderAddressList();
@@ -168,7 +171,7 @@ async function processAddresses() {
     document.getElementById('addr-count').textContent = state.addresses.length;
   } catch (err) {
     // Fallback: use addresses without geocoding (Maps will handle it)
-    state.addresses = items.map(r => ({ ...r, success: null, selected: true }));
+    state.addresses = items.map(r => ({ ...r, success: null, selected: true, city: r.city || '' }));
     renderAddressList();
     document.getElementById('card-addresses').style.display = '';
     document.getElementById('addr-count').textContent = state.addresses.length;
@@ -182,7 +185,27 @@ async function processAddresses() {
 function renderAddressList() {
   const list = document.getElementById('address-list');
   list.innerHTML = '';
-  state.addresses.forEach(addr => {
+
+  // Build city filter
+  const cities = [...new Set(state.addresses.map(a => a.city).filter(Boolean))].sort();
+  if (cities.length > 1) {
+    if (state.activeCities.size === 0) cities.forEach(c => state.activeCities.add(c));
+
+    const filterDiv = document.createElement('div');
+    filterDiv.className = 'city-filter';
+    filterDiv.innerHTML = `<span class="city-filter-label">Cities</span>`;
+    cities.forEach(city => {
+      const chip = document.createElement('span');
+      chip.className = 'city-chip' + (state.activeCities.has(city) ? ' active' : '');
+      chip.textContent = city;
+      chip.onclick = () => toggleCity(city);
+      filterDiv.appendChild(chip);
+    });
+    list.appendChild(filterDiv);
+  }
+
+  const visible = state.addresses.filter(a => !a.city || state.activeCities.size === 0 || state.activeCities.has(a.city));
+  visible.forEach(addr => {
     const div = document.createElement('div');
     div.className = 'address-item' + (addr.success === false ? ' error' : '');
     div.innerHTML = `
@@ -199,13 +222,33 @@ function renderAddressList() {
   });
 }
 
+function toggleCity(city) {
+  if (state.activeCities.has(city)) {
+    state.activeCities.delete(city);
+    state.addresses.filter(a => a.city === city).forEach(a => a.selected = false);
+  } else {
+    state.activeCities.add(city);
+    state.addresses.filter(a => a.city === city).forEach(a => a.selected = true);
+  }
+  renderAddressList();
+  document.getElementById('addr-count').textContent = state.addresses.filter(a => a.selected).length;
+}
+
 function toggleAddress(id, checked) {
   const addr = state.addresses.find(a => a.id === id);
   if (addr) addr.selected = checked;
 }
 
-function selectAll()  { state.addresses.forEach(a => { a.selected = true; }); renderAddressList(); }
-function selectNone() { state.addresses.forEach(a => { a.selected = false; }); renderAddressList(); }
+function selectAll()  {
+  state.addresses.forEach(a => { a.selected = true; });
+  state.addresses.map(a => a.city).filter(Boolean).forEach(c => state.activeCities.add(c));
+  renderAddressList();
+}
+function selectNone() {
+  state.addresses.forEach(a => { a.selected = false; });
+  state.activeCities.clear();
+  renderAddressList();
+}
 
 // ─── Route Building ───────────────────────────────────────────────────────────
 async function buildRoute() {

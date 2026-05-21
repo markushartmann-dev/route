@@ -292,3 +292,43 @@ input:focus, select:focus {
 .hidden { display: none !important; }
 
 h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; color: #333; }
+
+/* City Filter */
+.city-filter {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  background: #f8f9ff;
+}
+
+.city-filter-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 4px;
+}
+
+.city-chip {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid #0f3460;
+  background: white;
+  color: #0f3460;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.city-chip.active {
+  background: #0f3460;
+  color: white;
+}
+
+.city-chip:hover { opacity: 0.8; }
