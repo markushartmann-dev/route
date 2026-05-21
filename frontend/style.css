@@ -1,4 +1,4 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
+﻿* { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ─── Theme Variables ─────────────────────────────────────────────────────── */
 :root {
@@ -591,4 +591,18 @@ h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; color: var(--tex
   border-bottom-color: var(--primary, #3b82f6);
   font-weight: 600;
 }
+
+.saved-route-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.saved-route-item:last-child { border-bottom: none; }
+.saved-route-info { flex: 1; min-width: 0; }
+.saved-route-name { font-weight: 600; font-size: 15px; }
+.saved-route-meta { font-size: 12px; opacity: .6; margin-top: 2px; }
+.saved-route-btns { display: flex; gap: 6px; flex-shrink: 0; }
 
