@@ -19,23 +19,20 @@ const BACKEND = '/api';
 // ─── Init ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   applyTheme(localStorage.getItem('theme') || 'light');
-  if (state.token) {
-    verifyAndInit();
-  } else {
-    showLogin();
-  }
+  if (state.token) verifyToken();
+  showApp();
 });
 
-async function verifyAndInit() {
+async function verifyToken() {
   try {
     const res = await apiFetch('/auth/me');
-    if (!res.ok) { showLogin(); return; }
+    if (!res.ok) { clearAuth(); return; }
     const data = await res.json();
     state.user = data.user;
     localStorage.setItem('user', JSON.stringify(state.user));
-    showApp();
+    updateHeaderAuth();
   } catch {
-    showLogin();
+    clearAuth();
   }
 }
 
@@ -44,15 +41,35 @@ function showLogin() {
   document.getElementById('main-app').classList.add('hidden');
 }
 
-function showApp() {
+function hideLogin() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('main-app').classList.remove('hidden');
-  document.getElementById('header-user').textContent = '👤 ' + state.user.username;
-  if (state.user.role === 'admin') {
-    document.getElementById('admin-btn').classList.remove('hidden');
-  }
+}
+
+function showApp() {
+  document.getElementById('main-app').classList.remove('hidden');
+  document.getElementById('login-screen').classList.add('hidden');
+  updateHeaderAuth();
   setupDropZone();
   checkConfig();
+}
+
+function updateHeaderAuth() {
+  const userEl = document.getElementById('header-user');
+  const adminBtn = document.getElementById('admin-btn');
+  const signInBtn = document.getElementById('signin-btn');
+  const signOutBtn = document.getElementById('signout-btn');
+  if (state.user) {
+    userEl.textContent = '👤 ' + state.user.username;
+    if (state.user.role === 'admin') adminBtn.classList.remove('hidden');
+    signInBtn.classList.add('hidden');
+    signOutBtn.classList.remove('hidden');
+  } else {
+    userEl.textContent = '';
+    adminBtn.classList.add('hidden');
+    signInBtn.classList.remove('hidden');
+    signOutBtn.classList.add('hidden');
+  }
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -75,7 +92,8 @@ async function submitLogin(e) {
     state.user = data.user;
     localStorage.setItem('token', state.token);
     localStorage.setItem('user', JSON.stringify(state.user));
-    showApp();
+    hideLogin();
+    updateHeaderAuth();
   } catch {
     errEl.textContent = 'Connection error';
     errEl.classList.remove('hidden');
@@ -83,11 +101,15 @@ async function submitLogin(e) {
 }
 
 function logout() {
+  clearAuth();
+  updateHeaderAuth();
+}
+
+function clearAuth() {
   state.token = '';
   state.user = null;
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  showLogin();
 }
 
 function apiFetch(path, options = {}) {

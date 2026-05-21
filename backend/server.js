@@ -135,7 +135,7 @@ app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
 });
 
 // ─── Protected API Routes ─────────────────────────────────────────────────────
-app.post('/api/import-excel', requireAuth, upload.single('file'), (req, res) => {
+app.post('/api/import-excel', upload.single('file'), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
@@ -148,7 +148,7 @@ app.post('/api/import-excel', requireAuth, upload.single('file'), (req, res) => 
   }
 });
 
-app.post('/api/geocode', requireAuth, async (req, res) => {
+app.post('/api/geocode', async (req, res) => {
   const { address } = req.body;
   if (!address) return res.status(400).json({ error: 'Address missing' });
   try {
@@ -169,7 +169,7 @@ app.post('/api/geocode', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/geocode-batch', requireAuth, async (req, res) => {
+app.post('/api/geocode-batch', async (req, res) => {
   const { addresses } = req.body;
   if (!Array.isArray(addresses)) return res.status(400).json({ error: 'Addresses array missing' });
   const results = [];
@@ -192,7 +192,7 @@ app.post('/api/geocode-batch', requireAuth, async (req, res) => {
   res.json({ results });
 });
 
-app.get('/api/config', requireAuth, (req, res) => {
+app.get('/api/config', (req, res) => {
   res.json({ hasApiKey: !!GOOGLE_MAPS_API_KEY, apiKey: GOOGLE_MAPS_API_KEY || null });
 });
 
