@@ -96,6 +96,7 @@ async function handleFile(file) {
     if (!res.ok) throw new Error(data.error || 'Upload fehlgeschlagen');
 
     state.excelRows = data.rows;
+    state.fileKey = `${file.name}:${data.rows.length}`;
     populateColumnDropdowns(data.columns);
     document.getElementById('column-mapping').classList.remove('hidden');
   } catch (err) {
@@ -204,8 +205,8 @@ function renderAddressList() {
   const cities = [...new Set(state.addresses.map(a => a.city).filter(Boolean))].sort();
   if (cities.length > 1) {
     if (state.activeCities.size === 0) {
-    const saved = sessionStorage.getItem('activeCities');
-    const restored = saved ? JSON.parse(saved).filter(c => cities.includes(c)) : cities;
+    const saved = loadCityFilter();
+    const restored = saved ? saved.filter(c => cities.includes(c)) : cities;
     restored.forEach(c => state.activeCities.add(c));
   }
 
@@ -248,7 +249,7 @@ function toggleCity(city) {
     state.activeCities.add(city);
     state.addresses.filter(a => a.city === city).forEach(a => a.selected = true);
   }
-  sessionStorage.setItem('activeCities', JSON.stringify([...state.activeCities]));
+  saveCityFilter();
   renderAddressList();
   document.getElementById('addr-count').textContent = state.addresses.filter(a => a.selected).length;
 }
@@ -261,7 +262,7 @@ function toggleAddress(id, checked) {
 function selectAll()  {
   state.addresses.forEach(a => { a.selected = true; });
   state.addresses.map(a => a.city).filter(Boolean).forEach(c => state.activeCities.add(c));
-  sessionStorage.setItem('activeCities', JSON.stringify([...state.activeCities]));
+  saveCityFilter();
   renderAddressList();
 }
 function selectNone() {
@@ -585,6 +586,17 @@ function showLoading(text) {
 
 function hideLoading() {
   document.getElementById('loading').classList.add('hidden');
+}
+
+function saveCityFilter() {
+  if (!state.fileKey) return;
+  localStorage.setItem('cityFilter:' + state.fileKey, JSON.stringify([...state.activeCities]));
+}
+
+function loadCityFilter() {
+  if (!state.fileKey) return null;
+  const raw = localStorage.getItem('cityFilter:' + state.fileKey);
+  return raw ? JSON.parse(raw) : null;
 }
 
 function escHtml(str) {
