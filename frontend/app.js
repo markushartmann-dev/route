@@ -299,6 +299,7 @@ function updateHeaderAuth() {
     signInBtn.classList.remove('hidden');
     signOutBtn.classList.add('hidden');
   }
+  updateHomeAddressUI();
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
