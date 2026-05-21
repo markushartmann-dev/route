@@ -399,7 +399,60 @@ window.onMapsReady = function () { state.mapsLoaded = true; };
 // ─── Admin Panel ──────────────────────────────────────────────────────────────
 async function openAdmin() {
   document.getElementById('admin-modal').classList.remove('hidden');
+  showAdminTab('users');
   await loadUsers();
+}
+
+function showAdminTab(tab) {
+  document.getElementById('admin-tab-users').classList.toggle('hidden', tab !== 'users');
+  document.getElementById('admin-tab-logs').classList.toggle('hidden', tab !== 'logs');
+  document.getElementById('tab-users').classList.toggle('active', tab === 'users');
+  document.getElementById('tab-logs').classList.toggle('active', tab === 'logs');
+  if (tab === 'logs') loadLogs();
+}
+
+async function loadLogs() {
+  try {
+    const res = await apiFetch('/admin/logs');
+    const logs = await res.json();
+    renderLogs(logs);
+  } catch (err) {
+    document.getElementById('logs-tbody').innerHTML =
+      `<tr><td colspan="5" style="padding:16px;text-align:center">Fehler: ${escHtml(err.message)}</td></tr>`;
+  }
+}
+
+function renderLogs(logs) {
+  const tbody = document.getElementById('logs-tbody');
+  const countEl = document.getElementById('log-count');
+  if (countEl) countEl.textContent = logs.length + ' Einträge';
+  if (!logs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;opacity:.6">Keine Einträge vorhanden</td></tr>';
+    return;
+  }
+  const actionLabel = { login: '🔑 Anmeldung', import: '📂 Import', geocode: '📍 Geocodierung' };
+  tbody.innerHTML = logs.map(l => {
+    const d = new Date(l.timestamp);
+    const dateStr = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    let details = '–';
+    if (l.action === 'import')  details = escHtml((l.filename || '') + ' (' + (l.rows || 0) + ' Zeilen)');
+    if (l.action === 'geocode') details = (l.count || 0) + ' Adressen';
+    const dur = l.duration_ms != null ? (l.duration_ms / 1000).toFixed(1) + ' s' : '–';
+    return `<tr>
+      <td style="white-space:nowrap">${dateStr}</td>
+      <td><strong>${escHtml(l.user)}</strong></td>
+      <td>${actionLabel[l.action] || escHtml(l.action)}</td>
+      <td>${details}</td>
+      <td>${dur}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function clearLogs() {
+  if (!confirm('Protokoll wirklich leeren?')) return;
+  await apiFetch('/admin/logs', { method: 'DELETE' });
+  await loadLogs();
 }
 
 function closeAdmin() {
