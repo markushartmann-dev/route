@@ -324,10 +324,12 @@ input:focus, select:focus {
 .stop-item.fuel-stop     { border-left-color: #ef4444; background: #fff5f5; }
 .stop-item.start-stop    { border-left-color: #10b981; background: #f0fdf4; }
 .stop-item.fastfood-stop { border-left-color: #f97316; background: #fff7ed; }
+.stop-item.dkv-stop      { border-left-color: #0ea5e9; background: #f0f9ff; }
 [data-theme="dark"] .stop-item.break-stop    { background: #2a2210; }
 [data-theme="dark"] .stop-item.fuel-stop     { background: #2d1b1b; }
 [data-theme="dark"] .stop-item.start-stop    { background: #0f2a1e; }
 [data-theme="dark"] .stop-item.fastfood-stop { background: #2a1a0a; }
+[data-theme="dark"] .stop-item.dkv-stop      { background: #0a1e2a; }
 
 .stop-icon { font-size: 1.2rem; margin-top: 1px; }
 .stop-info { flex: 1; }
