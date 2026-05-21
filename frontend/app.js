@@ -1,6 +1,233 @@
+// ─── Translations ─────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  de: {
+    'login-username': 'Benutzername',
+    'login-password': 'Passwort',
+    'login-submit': 'Anmelden',
+    'signin-btn': 'Anmelden',
+    'signout-btn': 'Abmelden',
+    'admin-btn': '⚙️ Admin',
+    'settings-title': '⚙️ Fahrzeug & Einstellungen',
+    'settings-start-label': 'Startadresse (Heimatort)',
+    'settings-start-placeholder': 'z.B. Musterstraße 1, 12345 Berlin',
+    'settings-speed-label': 'Ø Geschwindigkeit (km/h)',
+    'settings-range-label': 'Max. Reichweite (km)',
+    'settings-vehicle-label': 'Fahrzeugtyp',
+    'settings-combustion': '🚗 Verbrenner',
+    'settings-electric': '⚡ Elektroauto',
+    'settings-break-duration': 'Pausendauer (Min)',
+    'settings-break-interval': 'Pause alle (km)',
+    'import-title': '📂 Excel importieren',
+    'import-drop-line1': 'Excel-Datei hier ablegen',
+    'import-drop-line2': 'oder klicken zum Auswählen',
+    'import-map-title': 'Spalten zuordnen',
+    'import-col-name': 'Firmenname',
+    'import-col-street': 'Straße',
+    'import-col-zip': 'PLZ',
+    'import-col-city': 'Stadt',
+    'import-col-full': 'Oder: Vollständige Adresse (eine Spalte)',
+    'import-process-btn': '📍 Adressen verarbeiten',
+    'import-processing': 'Verarbeite...',
+    'addr-title': '📋 Adressen',
+    'addr-select-all': 'Alle auswählen',
+    'addr-select-none': 'Keine',
+    'addr-build-route': '🗺️ Route berechnen',
+    'traffic-loading': '🔄 Lade Verkehrsdaten...',
+    'route-title': '📍 Routendetails',
+    'route-back': '← Zurück',
+    'route-open-maps': '🗺️ In Google Maps öffnen',
+    'route-export': '💾 Route exportieren',
+    'admin-title': '⚙️ Benutzerverwaltung',
+    'admin-col-username': 'Benutzername',
+    'admin-col-role': 'Rolle',
+    'admin-col-created': 'Erstellt',
+    'admin-form-add': 'Benutzer hinzufügen',
+    'admin-form-edit': 'Benutzer bearbeiten',
+    'admin-username-label': 'Benutzername',
+    'admin-password-label': 'Passwort',
+    'admin-password-placeholder': 'Leer lassen zum Behalten',
+    'admin-role-label': 'Rolle',
+    'role-user': 'Benutzer',
+    'role-admin': 'Admin',
+    'admin-save': 'Speichern',
+    'admin-cancel': 'Abbrechen',
+    'loading-default': 'Lade...',
+    // dynamic
+    'status-api-ok': '✅ API Key aktiv',
+    'status-no-key': '⚠️ Kein API Key konfiguriert',
+    'status-unreachable': '⚠️ Backend nicht erreichbar',
+    'theme-dark': '🌙 Dunkel',
+    'theme-light': '☀️ Hell',
+    'lang-toggle': '🇬🇧 EN',
+    'traffic-weekend': '🟢 Geringer Verkehr (Wochenende)',
+    'traffic-rush': '🔴 Stoßzeiten möglich',
+    'traffic-normal': '🟡 Normaler Verkehr',
+    'stop-fuel-electric': '⚡ Ladestation',
+    'stop-fuel-combustion': '⛽ Tankstelle',
+    'stop-break': '☕ Pause',
+    'stop-break-detail': '☕ Pause (~30 Min)',
+    'stop-break-address': 'Rastplatz empfohlen',
+    'summary-distance': 'Gesamtstrecke',
+    'summary-duration': 'Fahrzeit inkl. Pausen',
+    'summary-stops': 'Haltestellen',
+    'cities-label': 'Städte',
+    'col-select': '-- Spalte wählen --',
+    'col-none': '-- Nicht verwenden --',
+    'loading-excel': 'Lese Excel-Datei...',
+    'loading-geocode': 'Adressen geocodieren...',
+    'loading-route': 'Optimierte Route berechnen...',
+    'alert-maps-not-loaded': 'Google Maps noch nicht geladen.',
+    'alert-select-one': 'Bitte mindestens eine Adresse auswählen',
+    'alert-enter-start': 'Bitte Startadresse eingeben',
+    'alert-route-error': 'Fehler beim Berechnen der Route: ',
+    'alert-select-name-col': 'Bitte Firmenname-Spalte auswählen',
+    'alert-select-addr-col': 'Bitte Adressspalten auswählen',
+    'alert-no-addresses': 'Keine Adressen gefunden',
+    'alert-load-users-error': 'Fehler beim Laden der Benutzer: ',
+    'alert-delete-user': 'Benutzer "{name}" löschen?',
+    'alert-user-error': 'Fehler: ',
+    'alert-username-required': 'Benutzername erforderlich',
+    'alert-password-required': 'Passwort für neue Benutzer erforderlich',
+    'alert-connection-error': 'Verbindungsfehler',
+    'edit-btn': 'Bearbeiten',
+    'delete-btn': 'Löschen',
+    'export-title': 'Routenplan',
+    'export-distance': 'Gesamtstrecke',
+    'export-duration': 'Fahrzeit (inkl. Pausen)',
+    'export-stops': 'Haltestellen',
+  },
+  en: {
+    'login-username': 'Username',
+    'login-password': 'Password',
+    'login-submit': 'Sign in',
+    'signin-btn': 'Sign in',
+    'signout-btn': 'Sign out',
+    'admin-btn': '⚙️ Admin',
+    'settings-title': '⚙️ Vehicle & Settings',
+    'settings-start-label': 'Start Address (Home)',
+    'settings-start-placeholder': 'e.g. 123 Main St, City',
+    'settings-speed-label': 'Avg Speed (km/h)',
+    'settings-range-label': 'Max Range (km)',
+    'settings-vehicle-label': 'Vehicle Type',
+    'settings-combustion': '🚗 Combustion',
+    'settings-electric': '⚡ Electric',
+    'settings-break-duration': 'Break Duration (min)',
+    'settings-break-interval': 'Break Every (km)',
+    'import-title': '📂 Import Excel',
+    'import-drop-line1': 'Drop Excel file here',
+    'import-drop-line2': 'or click to select',
+    'import-map-title': 'Map Columns',
+    'import-col-name': 'Company Name',
+    'import-col-street': 'Street',
+    'import-col-zip': 'ZIP',
+    'import-col-city': 'City',
+    'import-col-full': 'Or: Full Address (one column)',
+    'import-process-btn': '📍 Process Addresses',
+    'import-processing': 'Processing...',
+    'addr-title': '📋 Addresses',
+    'addr-select-all': 'Select All',
+    'addr-select-none': 'None',
+    'addr-build-route': '🗺️ Calculate Route',
+    'traffic-loading': '🔄 Loading traffic data...',
+    'route-title': '📍 Route Details',
+    'route-back': '← Back',
+    'route-open-maps': '🗺️ Open in Google Maps',
+    'route-export': '💾 Export Route',
+    'admin-title': '⚙️ User Management',
+    'admin-col-username': 'Username',
+    'admin-col-role': 'Role',
+    'admin-col-created': 'Created',
+    'admin-form-add': 'Add User',
+    'admin-form-edit': 'Edit User',
+    'admin-username-label': 'Username',
+    'admin-password-label': 'Password',
+    'admin-password-placeholder': 'Leave empty to keep',
+    'admin-role-label': 'Role',
+    'role-user': 'User',
+    'role-admin': 'Admin',
+    'admin-save': 'Save',
+    'admin-cancel': 'Cancel',
+    'loading-default': 'Loading...',
+    // dynamic
+    'status-api-ok': '✅ API Key active',
+    'status-no-key': '⚠️ No API Key configured',
+    'status-unreachable': '⚠️ Backend unreachable',
+    'theme-dark': '🌙 Dark',
+    'theme-light': '☀️ Light',
+    'lang-toggle': '🇩🇪 DE',
+    'traffic-weekend': '🟢 Low traffic (weekend)',
+    'traffic-rush': '🔴 Rush hour possible',
+    'traffic-normal': '🟡 Normal traffic',
+    'stop-fuel-electric': '⚡ Charging station',
+    'stop-fuel-combustion': '⛽ Gas station',
+    'stop-break': '☕ Break',
+    'stop-break-detail': '☕ Break (~30 min)',
+    'stop-break-address': 'Rest area recommended',
+    'summary-distance': 'Total distance',
+    'summary-duration': 'Drive time incl. breaks',
+    'summary-stops': 'Stops',
+    'cities-label': 'Cities',
+    'col-select': '-- Select column --',
+    'col-none': '-- Do not use --',
+    'loading-excel': 'Reading Excel file...',
+    'loading-geocode': 'Geocoding addresses...',
+    'loading-route': 'Calculating optimized route...',
+    'alert-maps-not-loaded': 'Google Maps not loaded yet.',
+    'alert-select-one': 'Please select at least one address',
+    'alert-enter-start': 'Please enter start address',
+    'alert-route-error': 'Error calculating route: ',
+    'alert-select-name-col': 'Please select company name column',
+    'alert-select-addr-col': 'Please select address columns',
+    'alert-no-addresses': 'No addresses found',
+    'alert-load-users-error': 'Error loading users: ',
+    'alert-delete-user': 'Delete user "{name}"?',
+    'alert-user-error': 'Error: ',
+    'alert-username-required': 'Username required',
+    'alert-password-required': 'Password required for new users',
+    'alert-connection-error': 'Connection error',
+    'edit-btn': 'Edit',
+    'delete-btn': 'Delete',
+    'export-title': 'Route Plan',
+    'export-distance': 'Total distance',
+    'export-duration': 'Drive time (incl. breaks)',
+    'export-stops': 'Stops',
+  }
+};
+
+function t(key) {
+  return (TRANSLATIONS[state.lang] || TRANSLATIONS.de)[key] || key;
+}
+
+function applyLang(lang) {
+  state.lang = lang;
+  localStorage.setItem('lang', lang);
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const text = t(key);
+    if (text) el.textContent = text;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    const text = t(key);
+    if (text) el.placeholder = text;
+  });
+  const langBtn = document.getElementById('lang-btn');
+  if (langBtn) langBtn.textContent = t('lang-toggle');
+  const themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    themeBtn.textContent = isDark ? t('theme-light') : t('theme-dark');
+  }
+}
+
+function toggleLang() {
+  applyLang(state.lang === 'de' ? 'en' : 'de');
+}
+
 // ─── State ────────────────────────────────────────────────────────────────────
 const state = {
   apiKey: '',
+  lang: localStorage.getItem('lang') || 'de',
   token: localStorage.getItem('token') || '',
   user: JSON.parse(localStorage.getItem('user') || 'null'),
   excelRows: [],
@@ -19,6 +246,7 @@ const BACKEND = '/api';
 // ─── Init ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   applyTheme(localStorage.getItem('theme') || 'light');
+  applyLang(state.lang);
   if (state.token) verifyToken();
   showApp();
 });
@@ -95,7 +323,7 @@ async function submitLogin(e) {
     hideLogin();
     updateHeaderAuth();
   } catch {
-    errEl.textContent = 'Connection error';
+    errEl.textContent = t('alert-connection-error');
     errEl.classList.remove('hidden');
   }
 }
@@ -126,7 +354,7 @@ function apiFetch(path, options = {}) {
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+  if (btn) btn.textContent = theme === 'dark' ? t('theme-light') : t('theme-dark');
   localStorage.setItem('theme', theme);
 }
 
@@ -141,13 +369,13 @@ async function checkConfig() {
     const cfg = await res.json();
     if (cfg.apiKey) {
       state.apiKey = cfg.apiKey;
-      setStatus('✅ API Key active', 'ok');
+      setStatus(t('status-api-ok'), 'ok');
       loadGoogleMaps(cfg.apiKey);
     } else {
-      setStatus('⚠️ No API Key configured', 'error');
+      setStatus(t('status-no-key'), 'error');
     }
   } catch {
-    setStatus('⚠️ Backend unreachable', 'error');
+    setStatus(t('status-unreachable'), 'error');
   }
 }
 
@@ -187,15 +415,15 @@ async function loadUsers() {
     tbody.innerHTML = users.map(u => `
       <tr>
         <td>${escHtml(u.username)}</td>
-        <td><span class="role-badge ${u.role}">${u.role}</span></td>
+        <td><span class="role-badge ${u.role}">${t('role-' + u.role)}</span></td>
         <td>${new Date(u.createdAt).toLocaleDateString()}</td>
         <td>
-          <button class="btn-table" onclick="editUser(${u.id},'${escHtml(u.username)}','${u.role}')">Edit</button>
-          ${u.id !== state.user.id ? `<button class="btn-table danger" onclick="deleteUser(${u.id},'${escHtml(u.username)}')">Delete</button>` : ''}
+          <button class="btn-table" onclick="editUser(${u.id},'${escHtml(u.username)}','${u.role}')">${t('edit-btn')}</button>
+          ${u.id !== state.user.id ? `<button class="btn-table danger" onclick="deleteUser(${u.id},'${escHtml(u.username)}')">${t('delete-btn')}</button>` : ''}
         </td>
       </tr>`).join('');
   } catch (err) {
-    alert('Error loading users: ' + err.message);
+    alert(t('alert-load-users-error') + err.message);
   }
 }
 
@@ -204,7 +432,7 @@ function editUser(id, username, role) {
   document.getElementById('uf-username').value = username;
   document.getElementById('uf-password').value = '';
   document.getElementById('uf-role').value = role;
-  document.getElementById('user-form-title').textContent = 'Edit User';
+  document.getElementById('user-form-title').textContent = t('admin-form-edit');
 }
 
 function resetUserForm() {
@@ -212,7 +440,7 @@ function resetUserForm() {
   document.getElementById('uf-username').value = '';
   document.getElementById('uf-password').value = '';
   document.getElementById('uf-role').value = 'user';
-  document.getElementById('user-form-title').textContent = 'Add User';
+  document.getElementById('user-form-title').textContent = t('admin-form-add');
   document.getElementById('user-form-error').classList.add('hidden');
 }
 
@@ -224,8 +452,8 @@ async function saveUser() {
   const errEl = document.getElementById('user-form-error');
   errEl.classList.add('hidden');
 
-  if (!username) { errEl.textContent = 'Username required'; errEl.classList.remove('hidden'); return; }
-  if (!id && !password) { errEl.textContent = 'Password required for new users'; errEl.classList.remove('hidden'); return; }
+  if (!username) { errEl.textContent = t('alert-username-required'); errEl.classList.remove('hidden'); return; }
+  if (!id && !password) { errEl.textContent = t('alert-password-required'); errEl.classList.remove('hidden'); return; }
 
   try {
     const body = { username, role };
@@ -238,20 +466,20 @@ async function saveUser() {
     resetUserForm();
     await loadUsers();
   } catch (err) {
-    errEl.textContent = 'Error: ' + err.message;
+    errEl.textContent = t('alert-user-error') + err.message;
     errEl.classList.remove('hidden');
   }
 }
 
 async function deleteUser(id, username) {
-  if (!confirm(`Delete user "${username}"?`)) return;
+  if (!confirm(t('alert-delete-user').replace('{name}', username))) return;
   try {
     const res = await apiFetch(`/admin/users/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) { alert(data.error); return; }
     await loadUsers();
   } catch (err) {
-    alert('Error: ' + err.message);
+    alert(t('alert-user-error') + err.message);
   }
 }
 
@@ -271,7 +499,7 @@ function setupDropZone() {
 }
 
 async function handleFile(file) {
-  showLoading('Reading Excel file...');
+  showLoading(t('loading-excel'));
   try {
     const form = new FormData();
     form.append('file', file);
@@ -293,7 +521,9 @@ function populateColumnDropdowns(columns) {
   const selects = ['col-name', 'col-street', 'col-zip', 'col-city', 'col-full-address'];
   selects.forEach(id => {
     const sel = document.getElementById(id);
-    sel.innerHTML = id === 'col-full-address' ? '<option value="">-- Do not use --</option>' : '<option value="">-- Select column --</option>';
+    sel.innerHTML = id === 'col-full-address'
+      ? `<option value="">${t('col-none')}</option>`
+      : `<option value="">${t('col-select')}</option>`;
     columns.forEach(col => {
       const opt = document.createElement('option');
       opt.value = col;
@@ -320,8 +550,8 @@ async function processAddresses() {
   const colCity = document.getElementById('col-city').value;
   const colFull = document.getElementById('col-full-address').value;
 
-  if (!colName) return alert('Please select company name column');
-  if (!colFull && !colStreet) return alert('Please select address columns');
+  if (!colName) return alert(t('alert-select-name-col'));
+  if (!colFull && !colStreet) return alert(t('alert-select-addr-col'));
 
   const items = state.excelRows.map((row, i) => {
     const address = colFull && row[colFull]
@@ -335,11 +565,11 @@ async function processAddresses() {
     };
   }).filter(item => item.address);
 
-  if (!items.length) return alert('No addresses found');
+  if (!items.length) return alert(t('alert-no-addresses'));
 
   document.getElementById('import-progress').classList.remove('hidden');
   document.getElementById('column-mapping').classList.add('hidden');
-  showLoading('Geocoding addresses...');
+  showLoading(t('loading-geocode'));
 
   try {
     const res = await apiFetch('/geocode-batch', {
@@ -376,7 +606,7 @@ function renderAddressList() {
     }
     const filterDiv = document.createElement('div');
     filterDiv.className = 'city-filter';
-    filterDiv.innerHTML = `<span class="city-filter-label">Cities</span>`;
+    filterDiv.innerHTML = `<span class="city-filter-label">${t('cities-label')}</span>`;
     cities.forEach(city => {
       const chip = document.createElement('span');
       chip.className = 'city-chip' + (state.activeCities.has(city) ? ' active' : '');
@@ -440,11 +670,11 @@ function selectNone() {
 
 // ─── Route Building ───────────────────────────────────────────────────────────
 async function buildRoute() {
-  if (!state.mapsLoaded) return alert('Google Maps not loaded yet.');
+  if (!state.mapsLoaded) return alert(t('alert-maps-not-loaded'));
   const selected = state.addresses.filter(a => a.selected);
-  if (selected.length < 1) return alert('Please select at least one address');
+  if (selected.length < 1) return alert(t('alert-select-one'));
   const startAddr = document.getElementById('start-address').value.trim();
-  if (!startAddr) return alert('Please enter start address');
+  if (!startAddr) return alert(t('alert-enter-start'));
 
   const avgSpeed = parseInt(document.getElementById('avg-speed').value) || 80;
   const maxRange = parseInt(document.getElementById('max-range').value) || 400;
@@ -452,7 +682,7 @@ async function buildRoute() {
   const breakInterval = parseInt(document.getElementById('break-interval').value) || 200;
   const vehicleType = document.getElementById('vehicle-type').value;
 
-  showLoading('Calculating optimized route...');
+  showLoading(t('loading-route'));
   const stops = buildStopsWithBreaks(startAddr, selected, maxRange, breakInterval, vehicleType);
 
   try {
@@ -461,7 +691,7 @@ async function buildRoute() {
     if (!state.map) initMap();
     await calculateRoute(stops, avgSpeed, breakDuration, vehicleType);
   } catch (err) {
-    alert('Error calculating route: ' + err.message);
+    alert(t('alert-route-error') + err.message);
     backToSetup();
   } finally {
     hideLoading();
@@ -474,11 +704,11 @@ function buildStopsWithBreaks(startAddr, addresses, maxRange, breakInterval, veh
   addresses.forEach(addr => {
     kmBreak += 50; kmFuel += 50;
     if (kmFuel >= maxRange * 0.85) {
-      stops.push({ type: 'fuel-stop', name: vehicleType === 'electric' ? '⚡ Charging station' : '⛽ Gas station', address: addr.address, isServiceStop: true });
+      stops.push({ type: 'fuel-stop', name: vehicleType === 'electric' ? t('stop-fuel-electric') : t('stop-fuel-combustion'), address: addr.address, isServiceStop: true });
       kmFuel = 0;
     }
     if (kmBreak >= breakInterval) {
-      stops.push({ type: 'break', name: '☕ Break', address: addr.address, isServiceStop: true });
+      stops.push({ type: 'break', name: t('stop-break'), address: addr.address, isServiceStop: true });
       kmBreak = 0;
     }
     stops.push({ type: 'destination', ...addr });
@@ -501,9 +731,9 @@ function updateTrafficBadge() {
   const hour = new Date().getHours();
   const isRush = (hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 19);
   const isWeekend = [0, 6].includes(new Date().getDay());
-  if (isWeekend)     { badge.textContent = '🟢 Low traffic (weekend)'; badge.className = 'badge green'; }
-  else if (isRush)   { badge.textContent = '🔴 Rush hour possible';    badge.className = 'badge red'; }
-  else               { badge.textContent = '🟡 Normal traffic';         badge.className = 'badge orange'; }
+  if (isWeekend)     { badge.textContent = t('traffic-weekend'); badge.className = 'badge green'; }
+  else if (isRush)   { badge.textContent = t('traffic-rush');    badge.className = 'badge red'; }
+  else               { badge.textContent = t('traffic-normal');  badge.className = 'badge orange'; }
 }
 
 async function calculateRoute(stops, avgSpeed, breakDuration, vehicleType) {
@@ -559,15 +789,15 @@ function renderRouteDetails() {
   const r = state.route;
   const hours = Math.floor(r.totalDuration / 60), mins = r.totalDuration % 60;
   document.getElementById('route-summary').innerHTML = `
-    <div class="summary-item"><div class="value">${r.totalDistance} km</div><div class="label">Total distance</div></div>
-    <div class="summary-item"><div class="value">${hours}h ${mins}m</div><div class="label">Drive time incl. breaks</div></div>
-    <div class="summary-item"><div class="value">${r.stops.length - 1}</div><div class="label">Stops</div></div>`;
+    <div class="summary-item"><div class="value">${r.totalDistance} km</div><div class="label">${t('summary-distance')}</div></div>
+    <div class="summary-item"><div class="value">${hours}h ${mins}m</div><div class="label">${t('summary-duration')}</div></div>
+    <div class="summary-item"><div class="value">${r.stops.length - 1}</div><div class="label">${t('summary-stops')}</div></div>`;
 
   const stopList = document.getElementById('stop-list');
   stopList.innerHTML = '';
   r.stops.forEach((stop, i) => {
     if (i > 0 && r.breakCount > 0 && i % Math.ceil(r.stops.length / (r.breakCount + 1)) === 0) {
-      stopList.appendChild(createStopEl({ type: 'break', name: '☕ Break (~30 min)', address: 'Rest area recommended' }));
+      stopList.appendChild(createStopEl({ type: 'break', name: t('stop-break-detail'), address: t('stop-break-address') }));
     }
     const leg = r.result.routes[0].legs[i > 0 ? i - 1 : 0];
     stopList.appendChild(createStopEl({
@@ -606,7 +836,7 @@ function exportRoute() {
   if (!state.route) return;
   const r = state.route;
   const hours = Math.floor(r.totalDuration / 60), mins = r.totalDuration % 60;
-  let text = `Route Plan\n${'='.repeat(40)}\nTotal distance: ${r.totalDistance} km\nDrive time (incl. breaks): ${hours}h ${mins}m\n\nStops:\n`;
+  let text = `${t('export-title')}\n${'='.repeat(40)}\n${t('export-distance')}: ${r.totalDistance} km\n${t('export-duration')}: ${hours}h ${mins}m\n\n${t('export-stops')}:\n`;
   r.stops.forEach((s, i) => { text += `${i + 1}. ${s.name}\n   ${s.formatted_address || s.address}\n`; });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
@@ -621,7 +851,7 @@ function backToSetup() {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function showLoading(text) {
-  document.getElementById('loading-text').textContent = text || 'Loading...';
+  document.getElementById('loading-text').textContent = text || t('loading-default');
   document.getElementById('loading').classList.remove('hidden');
 }
 
