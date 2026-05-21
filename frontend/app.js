@@ -203,7 +203,11 @@ function renderAddressList() {
   // Build city filter
   const cities = [...new Set(state.addresses.map(a => a.city).filter(Boolean))].sort();
   if (cities.length > 1) {
-    if (state.activeCities.size === 0) cities.forEach(c => state.activeCities.add(c));
+    if (state.activeCities.size === 0) {
+    const saved = sessionStorage.getItem('activeCities');
+    const restored = saved ? JSON.parse(saved).filter(c => cities.includes(c)) : cities;
+    restored.forEach(c => state.activeCities.add(c));
+  }
 
     const filterDiv = document.createElement('div');
     filterDiv.className = 'city-filter';
@@ -244,6 +248,7 @@ function toggleCity(city) {
     state.activeCities.add(city);
     state.addresses.filter(a => a.city === city).forEach(a => a.selected = true);
   }
+  sessionStorage.setItem('activeCities', JSON.stringify([...state.activeCities]));
   renderAddressList();
   document.getElementById('addr-count').textContent = state.addresses.filter(a => a.selected).length;
 }
@@ -256,11 +261,13 @@ function toggleAddress(id, checked) {
 function selectAll()  {
   state.addresses.forEach(a => { a.selected = true; });
   state.addresses.map(a => a.city).filter(Boolean).forEach(c => state.activeCities.add(c));
+  sessionStorage.setItem('activeCities', JSON.stringify([...state.activeCities]));
   renderAddressList();
 }
 function selectNone() {
   state.addresses.forEach(a => { a.selected = false; });
   state.activeCities.clear();
+  sessionStorage.setItem('activeCities', JSON.stringify([]));
   renderAddressList();
 }
 
