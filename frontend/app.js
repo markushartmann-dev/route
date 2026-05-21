@@ -1027,6 +1027,25 @@ function openInGoogleMaps() {
   window.open(`https://www.google.de/maps/dir/${origin}/${wps ? wps + '/' : ''}${dest}`, '_blank');
 }
 
+function openInAppleMaps() {
+  if (!state.route) return;
+  const stops = state.route.stops;
+  const first = stops[0];
+  const last  = stops[stops.length - 1];
+  const saddr = first.lat && first.lng
+    ? `${first.lat},${first.lng}`
+    : encodeURIComponent(first.formatted_address || first.address);
+  const daddr = last.lat && last.lng
+    ? `${last.lat},${last.lng}`
+    : encodeURIComponent(last.formatted_address || last.address);
+  // maps:// opens natively on iOS/macOS, https fallback works everywhere
+  const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+  const url = isApple
+    ? `maps://?saddr=${saddr}&daddr=${daddr}&dirflg=d`
+    : `https://maps.apple.com/?saddr=${saddr}&daddr=${daddr}&dirflg=d`;
+  window.open(url, '_blank');
+}
+
 function exportRoute() {
   if (!state.route) return;
   const r = state.route;
