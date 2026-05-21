@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
@@ -40,6 +40,7 @@
       <button id="theme-toggle" onclick="toggleTheme()">🌙 Dunkel</button>
       <button id="lang-btn" class="btn-header" onclick="toggleLang()">🇬🇧 EN</button>
       <button id="admin-btn" class="btn-header hidden" onclick="openAdmin()" data-i18n="admin-btn">⚙️ Admin</button>
+      <button id="routes-btn" class="btn-header hidden" onclick="openSavedRoutes()">📅 Routen</button>
       <span id="header-user" class="header-user"></span>
       <button id="signin-btn" class="btn-header" onclick="showLogin()" data-i18n="signin-btn">Anmelden</button>
       <button id="signout-btn" class="btn-header hidden" onclick="logout()" data-i18n="signout-btn">Abmelden</button>
@@ -188,6 +189,7 @@
         <div class="route-actions">
           <button class="btn-primary" onclick="openInGoogleMaps()" data-i18n="route-open-maps">🗺️ In Google Maps öffnen</button>
           <button class="btn-secondary" onclick="exportRoute()" data-i18n="route-export">💾 Route exportieren</button>
+          <button id="save-route-btn" class="btn-secondary hidden" onclick="saveCurrentRoute()">📅 Route speichern</button>
         </div>
       </div>
     </div>
@@ -268,6 +270,21 @@
             <tbody id="logs-tbody"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Saved Routes Modal ────────────────────────────────────────────────────── -->
+<div id="routes-modal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <h2>📅 Gespeicherte Routen</h2>
+      <button class="modal-close" onclick="closeSavedRoutes()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="routes-list-content">
+        <p style="opacity:.6;text-align:center;padding:20px">Lade...</p>
       </div>
     </div>
   </div>
