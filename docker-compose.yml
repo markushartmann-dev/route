@@ -9,6 +9,9 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3001
+      - JWT_SECRET=change-this-to-a-random-secret
+    volumes:
+      - route-planner-data:/app/data
     networks:
       - route-planner
 
@@ -28,3 +31,6 @@ services:
 networks:
   route-planner:
     driver: bridge
+
+volumes:
+  route-planner-data:

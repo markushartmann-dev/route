@@ -411,3 +411,154 @@ h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; color: var(--tex
 }
 
 .city-chip:hover { opacity: 0.8; }
+
+/* ─── Login Screen ────────────────────────────────────────────────────────── */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--header-grad);
+}
+
+.login-box {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.login-logo { font-size: 3rem; margin-bottom: 8px; }
+.login-box h1 { font-size: 1.4rem; font-weight: 700; color: var(--primary); margin-bottom: 24px; }
+.login-box .form-group { text-align: left; }
+
+.login-error {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  background: #fee2e2;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+/* ─── Header buttons ──────────────────────────────────────────────────────── */
+.btn-header {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.btn-header:hover { background: rgba(255,255,255,0.25); }
+
+.header-user {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.8);
+  white-space: nowrap;
+}
+
+/* ─── Admin Modal ─────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal {
+  background: var(--bg-card);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin: 0; }
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.modal-close:hover { background: var(--bg-item); }
+
+.modal-body { padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+
+.modal-section { border-top: 1px solid var(--border); padding-top: 20px; }
+.modal-section h3 { margin-bottom: 14px; }
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.user-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border);
+}
+
+.user-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.user-table tr:last-child td { border-bottom: none; }
+
+.role-badge {
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.role-badge.admin { background: #dbeafe; color: #1d4ed8; }
+.role-badge.user  { background: #dcfce7; color: #15803d; }
+[data-theme="dark"] .role-badge.admin { background: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .role-badge.user  { background: #14532d; color: #86efac; }
+
+.btn-table {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg-item);
+  color: var(--text);
+  margin-right: 4px;
+  transition: background 0.15s;
+}
+.btn-table:hover { background: var(--bg-item-hover); }
+.btn-table.danger { background: #fee2e2; color: #dc2626; }
+.btn-table.danger:hover { background: #fecaca; }

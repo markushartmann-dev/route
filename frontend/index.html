@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,13 +9,38 @@
 </head>
 <body>
 
+<!-- ─── Login Screen ─────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🗺️</div>
+    <h1>Route Planner</h1>
+    <form id="login-form" onsubmit="submitLogin(event)">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="login-username" autocomplete="username" required />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" autocomplete="current-password" required />
+      </div>
+      <p id="login-error" class="login-error hidden"></p>
+      <button type="submit" class="btn-primary" style="width:100%">Sign in</button>
+    </form>
+  </div>
+</div>
+
+<!-- ─── Main App ─────────────────────────────────────────────────────────── -->
+<div id="main-app" class="hidden">
+
 <div id="app">
-  <!-- Header -->
   <header>
     <h1>🗺️ Route Planner</h1>
-    <div style="display:flex;align-items:center;gap:16px;">
+    <div style="display:flex;align-items:center;gap:12px;">
       <div id="api-status"></div>
       <button id="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+      <button id="admin-btn" class="btn-header hidden" onclick="openAdmin()">⚙️ Admin</button>
+      <span id="header-user" class="header-user"></span>
+      <button class="btn-header" onclick="logout()">Sign out</button>
     </div>
   </header>
 
@@ -23,99 +48,96 @@
   <div id="setup-panel" class="panel">
     <div class="panel-grid">
 
-      <!-- Step 1: Settings -->
       <div class="card" id="card-settings">
-        <h2>⚙️ Fahrzeug & Einstellungen</h2>
+        <h2>⚙️ Vehicle & Settings</h2>
         <div class="form-group">
-          <label>Startadresse (Heimatort)</label>
-          <input type="text" id="start-address" placeholder="z.B. Musterstraße 1, 12345 Berlin" />
+          <label>Start Address (Home)</label>
+          <input type="text" id="start-address" placeholder="e.g. Main Street 1, 12345 Berlin" />
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Ø Geschwindigkeit (km/h)</label>
+            <label>Avg. Speed (km/h)</label>
             <input type="number" id="avg-speed" value="80" min="30" max="200" />
           </div>
           <div class="form-group">
-            <label>Max. Reichweite (km)</label>
+            <label>Max. Range (km)</label>
             <input type="number" id="max-range" value="400" min="50" max="1000" />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Fahrzeugtyp</label>
+            <label>Vehicle Type</label>
             <select id="vehicle-type">
-              <option value="car">🚗 Verbrenner</option>
-              <option value="electric">⚡ Elektroauto</option>
+              <option value="car">🚗 Combustion</option>
+              <option value="electric">⚡ Electric</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Pausendauer (Min)</label>
+            <label>Break Duration (min)</label>
             <input type="number" id="break-duration" value="30" min="5" max="120" />
           </div>
         </div>
         <div class="form-group">
-          <label>Pause alle (km)</label>
+          <label>Break every (km)</label>
           <input type="number" id="break-interval" value="200" min="50" max="600" />
         </div>
       </div>
 
-      <!-- Step 2: Excel Import -->
       <div class="card" id="card-import">
-        <h2>📂 Excel importieren</h2>
+        <h2>📂 Import Excel</h2>
         <div class="drop-zone" id="drop-zone">
           <div class="drop-icon">📄</div>
-          <p>Excel-Datei hier ablegen<br/>oder klicken zum Auswählen</p>
+          <p>Drop Excel file here<br/>or click to select</p>
           <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden />
         </div>
 
         <div id="column-mapping" class="hidden">
-          <h3>Spalten zuordnen</h3>
+          <h3>Map columns</h3>
           <div class="form-row">
             <div class="form-group">
-              <label>Firmenname</label>
+              <label>Company name</label>
               <select id="col-name"></select>
             </div>
             <div class="form-group">
-              <label>Straße</label>
+              <label>Street</label>
               <select id="col-street"></select>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>PLZ</label>
+              <label>ZIP</label>
               <select id="col-zip"></select>
             </div>
             <div class="form-group">
-              <label>Stadt</label>
+              <label>City</label>
               <select id="col-city"></select>
             </div>
           </div>
           <div class="form-group">
-            <label>Oder: Vollständige Adresse (eine Spalte)</label>
+            <label>Or: Full address (single column)</label>
             <select id="col-full-address">
-              <option value="">-- Nicht verwenden --</option>
+              <option value="">-- Do not use --</option>
             </select>
           </div>
           <button class="btn-primary" onclick="processAddresses()">
-            📍 Adressen verarbeiten
+            📍 Process addresses
           </button>
         </div>
 
         <div id="import-progress" class="hidden">
           <div class="progress-bar"><div id="progress-fill"></div></div>
-          <p id="progress-text">Verarbeite...</p>
+          <p id="progress-text">Processing...</p>
         </div>
       </div>
     </div>
 
-    <!-- Address List -->
     <div class="card" id="card-addresses" style="display:none">
       <div class="card-header">
-        <h2>📋 Adressen (<span id="addr-count">0</span>)</h2>
+        <h2>📋 Addresses (<span id="addr-count">0</span>)</h2>
         <div class="card-actions">
-          <button class="btn-secondary" onclick="selectAll()">Alle auswählen</button>
-          <button class="btn-secondary" onclick="selectNone()">Keine</button>
-          <button class="btn-primary" onclick="buildRoute()">🗺️ Route berechnen</button>
+          <button class="btn-secondary" onclick="selectAll()">Select all</button>
+          <button class="btn-secondary" onclick="selectNone()">None</button>
+          <button class="btn-primary" onclick="buildRoute()">🗺️ Calculate route</button>
         </div>
       </div>
       <div id="address-list"></div>
@@ -125,33 +147,72 @@
   <!-- Route Panel -->
   <div id="route-panel" class="hidden">
     <div class="panel-grid two-col">
-      <!-- Map -->
       <div class="card map-card">
         <div id="map"></div>
         <div id="traffic-info">
-          <span id="traffic-badge" class="badge">🔄 Lade Verkehrsdaten...</span>
+          <span id="traffic-badge" class="badge">🔄 Loading traffic data...</span>
         </div>
       </div>
 
-      <!-- Route Details -->
       <div class="card route-details">
         <div class="card-header">
-          <h2>📍 Routendetails</h2>
-          <button class="btn-secondary" onclick="backToSetup()">← Zurück</button>
+          <h2>📍 Route Details</h2>
+          <button class="btn-secondary" onclick="backToSetup()">← Back</button>
         </div>
-
         <div id="route-summary" class="route-summary"></div>
-
         <div id="stop-list"></div>
-
         <div class="route-actions">
-          <button class="btn-primary" onclick="openInGoogleMaps()">
-            🗺️ In Google Maps öffnen
-          </button>
-          <button class="btn-secondary" onclick="exportRoute()">
-            💾 Route exportieren
-          </button>
+          <button class="btn-primary" onclick="openInGoogleMaps()">🗺️ Open in Google Maps</button>
+          <button class="btn-secondary" onclick="exportRoute()">💾 Export route</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ─── Admin Modal ───────────────────────────────────────────────────────── -->
+<div id="admin-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚙️ User Management</h2>
+      <button class="modal-close" onclick="closeAdmin()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <table class="user-table" id="user-table">
+        <thead>
+          <tr><th>Username</th><th>Role</th><th>Created</th><th></th></tr>
+        </thead>
+        <tbody id="user-tbody"></tbody>
+      </table>
+
+      <div class="modal-section">
+        <h3 id="user-form-title">Add User</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="uf-username" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="uf-password" placeholder="Leave blank to keep" />
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select id="uf-role">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" id="uf-id" />
+        <div style="display:flex;gap:8px;">
+          <button class="btn-primary" onclick="saveUser()">Save</button>
+          <button class="btn-secondary" onclick="resetUserForm()">Cancel</button>
+        </div>
+        <p id="user-form-error" class="login-error hidden"></p>
       </div>
     </div>
   </div>
@@ -161,7 +222,7 @@
 <div id="loading" class="hidden">
   <div class="loading-box">
     <div class="spinner"></div>
-    <p id="loading-text">Berechne Route...</p>
+    <p id="loading-text">Calculating route...</p>
   </div>
 </div>
 

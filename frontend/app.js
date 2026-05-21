@@ -1,9 +1,12 @@
 // ─── State ────────────────────────────────────────────────────────────────────
 const state = {
   apiKey: '',
+  token: localStorage.getItem('token') || '',
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
   excelRows: [],
-  addresses: [],      // {id, name, address, lat, lng, success, city}
+  addresses: [],
   activeCities: new Set(),
+  fileKey: '',
   route: null,
   map: null,
   directionsRenderer: null,
@@ -11,41 +14,118 @@ const state = {
   mapsLoaded: false,
 };
 
-const BACKEND = '/api';  // proxied via nginx
+const BACKEND = '/api';
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('theme') || 'light';
-  applyTheme(saved);
-  setupDropZone();
-  checkConfig();
+  applyTheme(localStorage.getItem('theme') || 'light');
+  if (state.token) {
+    verifyAndInit();
+  } else {
+    showLogin();
+  }
 });
 
+async function verifyAndInit() {
+  try {
+    const res = await apiFetch('/auth/me');
+    if (!res.ok) { showLogin(); return; }
+    const data = await res.json();
+    state.user = data.user;
+    localStorage.setItem('user', JSON.stringify(state.user));
+    showApp();
+  } catch {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('main-app').classList.add('hidden');
+}
+
+function showApp() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('main-app').classList.remove('hidden');
+  document.getElementById('header-user').textContent = '👤 ' + state.user.username;
+  if (state.user.role === 'admin') {
+    document.getElementById('admin-btn').classList.remove('hidden');
+  }
+  setupDropZone();
+  checkConfig();
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+async function submitLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.classList.add('hidden');
+
+  try {
+    const res = await fetch(`${BACKEND}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error; errEl.classList.remove('hidden'); return; }
+    state.token = data.token;
+    state.user = data.user;
+    localStorage.setItem('token', state.token);
+    localStorage.setItem('user', JSON.stringify(state.user));
+    showApp();
+  } catch {
+    errEl.textContent = 'Connection error';
+    errEl.classList.remove('hidden');
+  }
+}
+
+function logout() {
+  state.token = '';
+  state.user = null;
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  showLogin();
+}
+
+function apiFetch(path, options = {}) {
+  return fetch(`${BACKEND}${path}`, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      'Authorization': `Bearer ${state.token}`
+    }
+  });
+}
+
+// ─── Theme ────────────────────────────────────────────────────────────────────
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('theme-toggle');
-  btn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+  if (btn) btn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
   localStorage.setItem('theme', theme);
 }
 
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  applyTheme(current === 'dark' ? 'light' : 'dark');
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 }
 
+// ─── Config / Maps ────────────────────────────────────────────────────────────
 async function checkConfig() {
   try {
-    const res = await fetch(`${BACKEND}/config`);
+    const res = await apiFetch('/config');
     const cfg = await res.json();
     if (cfg.apiKey) {
       state.apiKey = cfg.apiKey;
-      setStatus('✅ API Key vorhanden', 'ok');
-      loadGoogleMaps(state.apiKey);
+      setStatus('✅ API Key active', 'ok');
+      loadGoogleMaps(cfg.apiKey);
     } else {
-      setStatus('⚠️ Kein API Key konfiguriert', 'error');
+      setStatus('⚠️ No API Key configured', 'error');
     }
   } catch {
-    setStatus('⚠️ Backend nicht erreichbar', 'error');
+    setStatus('⚠️ Backend unreachable', 'error');
   }
 }
 
@@ -54,7 +134,6 @@ function setStatus(msg, cls) {
   el.textContent = msg;
   el.className = cls;
 }
-
 
 function loadGoogleMaps(key) {
   if (state.mapsLoaded || document.getElementById('gmaps-script')) return;
@@ -65,42 +144,124 @@ function loadGoogleMaps(key) {
   document.head.appendChild(script);
 }
 
-window.onMapsReady = function () {
-  state.mapsLoaded = true;
-};
+window.onMapsReady = function () { state.mapsLoaded = true; };
+
+// ─── Admin Panel ──────────────────────────────────────────────────────────────
+async function openAdmin() {
+  document.getElementById('admin-modal').classList.remove('hidden');
+  await loadUsers();
+}
+
+function closeAdmin() {
+  document.getElementById('admin-modal').classList.add('hidden');
+  resetUserForm();
+}
+
+async function loadUsers() {
+  try {
+    const res = await apiFetch('/admin/users');
+    const users = await res.json();
+    const tbody = document.getElementById('user-tbody');
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>${escHtml(u.username)}</td>
+        <td><span class="role-badge ${u.role}">${u.role}</span></td>
+        <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+        <td>
+          <button class="btn-table" onclick="editUser(${u.id},'${escHtml(u.username)}','${u.role}')">Edit</button>
+          ${u.id !== state.user.id ? `<button class="btn-table danger" onclick="deleteUser(${u.id},'${escHtml(u.username)}')">Delete</button>` : ''}
+        </td>
+      </tr>`).join('');
+  } catch (err) {
+    alert('Error loading users: ' + err.message);
+  }
+}
+
+function editUser(id, username, role) {
+  document.getElementById('uf-id').value = id;
+  document.getElementById('uf-username').value = username;
+  document.getElementById('uf-password').value = '';
+  document.getElementById('uf-role').value = role;
+  document.getElementById('user-form-title').textContent = 'Edit User';
+}
+
+function resetUserForm() {
+  document.getElementById('uf-id').value = '';
+  document.getElementById('uf-username').value = '';
+  document.getElementById('uf-password').value = '';
+  document.getElementById('uf-role').value = 'user';
+  document.getElementById('user-form-title').textContent = 'Add User';
+  document.getElementById('user-form-error').classList.add('hidden');
+}
+
+async function saveUser() {
+  const id = document.getElementById('uf-id').value;
+  const username = document.getElementById('uf-username').value.trim();
+  const password = document.getElementById('uf-password').value;
+  const role = document.getElementById('uf-role').value;
+  const errEl = document.getElementById('user-form-error');
+  errEl.classList.add('hidden');
+
+  if (!username) { errEl.textContent = 'Username required'; errEl.classList.remove('hidden'); return; }
+  if (!id && !password) { errEl.textContent = 'Password required for new users'; errEl.classList.remove('hidden'); return; }
+
+  try {
+    const body = { username, role };
+    if (password) body.password = password;
+    const res = id
+      ? await apiFetch(`/admin/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      : await apiFetch('/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error; errEl.classList.remove('hidden'); return; }
+    resetUserForm();
+    await loadUsers();
+  } catch (err) {
+    errEl.textContent = 'Error: ' + err.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
+async function deleteUser(id, username) {
+  if (!confirm(`Delete user "${username}"?`)) return;
+  try {
+    const res = await apiFetch(`/admin/users/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error); return; }
+    await loadUsers();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
 
 // ─── Drop Zone / File Input ───────────────────────────────────────────────────
 function setupDropZone() {
   const zone = document.getElementById('drop-zone');
   const input = document.getElementById('file-input');
-
   zone.addEventListener('click', () => input.click());
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', e => {
     e.preventDefault();
     zone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   });
   input.addEventListener('change', () => { if (input.files[0]) handleFile(input.files[0]); });
 }
 
 async function handleFile(file) {
-  showLoading('Lese Excel-Datei...');
+  showLoading('Reading Excel file...');
   try {
     const form = new FormData();
     form.append('file', file);
-    const res = await fetch(`${BACKEND}/import-excel`, { method: 'POST', body: form });
+    const res = await apiFetch('/import-excel', { method: 'POST', body: form });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Upload fehlgeschlagen');
-
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
     state.excelRows = data.rows;
     state.fileKey = `${file.name}:${data.rows.length}`;
     populateColumnDropdowns(data.columns);
     document.getElementById('column-mapping').classList.remove('hidden');
   } catch (err) {
-    alert('Fehler: ' + err.message);
+    alert('Error: ' + err.message);
   } finally {
     hideLoading();
   }
@@ -110,7 +271,7 @@ function populateColumnDropdowns(columns) {
   const selects = ['col-name', 'col-street', 'col-zip', 'col-city', 'col-full-address'];
   selects.forEach(id => {
     const sel = document.getElementById(id);
-    sel.innerHTML = id === 'col-full-address' ? '<option value="">-- Nicht verwenden --</option>' : '<option value="">-- Spalte wählen --</option>';
+    sel.innerHTML = id === 'col-full-address' ? '<option value="">-- Do not use --</option>' : '<option value="">-- Select column --</option>';
     columns.forEach(col => {
       const opt = document.createElement('option');
       opt.value = col;
@@ -118,14 +279,11 @@ function populateColumnDropdowns(columns) {
       sel.appendChild(opt);
     });
   });
-
-  // Auto-detect common column names
   const lower = columns.map(c => c.toLowerCase());
   const trySet = (id, keywords) => {
     const idx = lower.findIndex(c => keywords.some(k => c.includes(k)));
     if (idx >= 0) document.getElementById(id).value = columns[idx];
   };
-
   trySet('col-name', ['firma', 'name', 'company', 'unternehmen', 'kunde']);
   trySet('col-street', ['straße', 'strasse', 'street', 'adresse', 'address']);
   trySet('col-zip', ['plz', 'zip', 'postleitzahl', 'postal']);
@@ -140,76 +298,60 @@ async function processAddresses() {
   const colCity = document.getElementById('col-city').value;
   const colFull = document.getElementById('col-full-address').value;
 
-  if (!colName) return alert('Bitte Spalte für Firmenname wählen');
-  if (!colFull && !colStreet) return alert('Bitte Adress-Spalten wählen');
+  if (!colName) return alert('Please select company name column');
+  if (!colFull && !colStreet) return alert('Please select address columns');
 
   const items = state.excelRows.map((row, i) => {
-    let address = '';
-    if (colFull && row[colFull]) {
-      address = row[colFull];
-    } else {
-      const parts = [row[colStreet], row[colZip], row[colCity]].filter(Boolean);
-      address = parts.join(', ');
-    }
+    const address = colFull && row[colFull]
+      ? row[colFull]
+      : [row[colStreet], row[colZip], row[colCity]].filter(Boolean).join(', ');
     return {
       id: i,
-      name: row[colName] || `Eintrag ${i+1}`,
+      name: row[colName] || `Entry ${i+1}`,
       address: address.trim(),
-      city: (row[colCity] || row[colFull] || '').trim()
+      city: (row[colCity] || '').trim()
     };
   }).filter(item => item.address);
 
-  if (!items.length) return alert('Keine Adressen gefunden');
+  if (!items.length) return alert('No addresses found');
 
-  // Geocode all addresses
   document.getElementById('import-progress').classList.remove('hidden');
   document.getElementById('column-mapping').classList.add('hidden');
+  showLoading('Geocoding addresses...');
 
-  showLoading('Geocodiere Adressen...');
   try {
-    const res = await fetch(`${BACKEND}/geocode-batch`, {
+    const res = await apiFetch('/geocode-batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ addresses: items })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
-
-    state.addresses = data.results.map(r => ({
-      ...r,
-      selected: r.success,
-      city: r.city || ''
-    }));
-
-    renderAddressList();
-    document.getElementById('card-addresses').style.display = '';
-    document.getElementById('addr-count').textContent = state.addresses.length;
-  } catch (err) {
-    // Fallback: use addresses without geocoding (Maps will handle it)
-    state.addresses = items.map(r => ({ ...r, success: null, selected: true, city: r.city || '' }));
-    renderAddressList();
-    document.getElementById('card-addresses').style.display = '';
-    document.getElementById('addr-count').textContent = state.addresses.length;
-    console.warn('Geocoding failed, using raw addresses:', err.message);
+    state.addresses = data.results.map(r => ({ ...r, selected: r.success, city: r.city || '' }));
+  } catch {
+    state.addresses = items.map(r => ({ ...r, success: null, selected: true }));
+    console.warn('Geocoding failed, using raw addresses');
   } finally {
+    state.activeCities = new Set();
+    renderAddressList();
+    document.getElementById('card-addresses').style.display = '';
+    document.getElementById('addr-count').textContent = state.addresses.filter(a => a.selected).length;
     hideLoading();
     document.getElementById('import-progress').classList.add('hidden');
   }
 }
 
+// ─── City Filter ──────────────────────────────────────────────────────────────
 function renderAddressList() {
   const list = document.getElementById('address-list');
   list.innerHTML = '';
 
-  // Build city filter
   const cities = [...new Set(state.addresses.map(a => a.city).filter(Boolean))].sort();
   if (cities.length > 1) {
     if (state.activeCities.size === 0) {
-    const saved = loadCityFilter();
-    const restored = saved ? saved.filter(c => cities.includes(c)) : cities;
-    restored.forEach(c => state.activeCities.add(c));
-  }
-
+      const saved = loadCityFilter();
+      (saved ? saved.filter(c => cities.includes(c)) : cities).forEach(c => state.activeCities.add(c));
+    }
     const filterDiv = document.createElement('div');
     filterDiv.className = 'city-filter';
     filterDiv.innerHTML = `<span class="city-filter-label">Cities</span>`;
@@ -223,22 +365,23 @@ function renderAddressList() {
     list.appendChild(filterDiv);
   }
 
-  const visible = state.addresses.filter(a => !a.city || state.activeCities.size === 0 || state.activeCities.has(a.city));
-  visible.forEach(addr => {
-    const div = document.createElement('div');
-    div.className = 'address-item' + (addr.success === false ? ' error' : '');
-    div.innerHTML = `
-      <input type="checkbox" id="chk-${addr.id}" ${addr.selected ? 'checked' : ''}
-        onchange="toggleAddress(${addr.id}, this.checked)" />
-      <div class="addr-info">
-        <div class="addr-name">${escHtml(addr.name)}</div>
-        <div class="addr-address">${escHtml(addr.formatted_address || addr.address)}</div>
-      </div>
-      <span class="addr-status ${addr.success === true ? 'ok' : addr.success === false ? 'error' : 'pending'}">
-        ${addr.success === true ? '✅ OK' : addr.success === false ? '❌ Fehler' : '⏳ Roh'}
-      </span>`;
-    list.appendChild(div);
-  });
+  state.addresses
+    .filter(a => !a.city || state.activeCities.size === 0 || state.activeCities.has(a.city))
+    .forEach(addr => {
+      const div = document.createElement('div');
+      div.className = 'address-item' + (addr.success === false ? ' error' : '');
+      div.innerHTML = `
+        <input type="checkbox" id="chk-${addr.id}" ${addr.selected ? 'checked' : ''}
+          onchange="toggleAddress(${addr.id}, this.checked)" />
+        <div class="addr-info">
+          <div class="addr-name">${escHtml(addr.name)}</div>
+          <div class="addr-address">${escHtml(addr.formatted_address || addr.address)}</div>
+        </div>
+        <span class="addr-status ${addr.success === true ? 'ok' : addr.success === false ? 'error' : 'pending'}">
+          ${addr.success === true ? '✅ OK' : addr.success === false ? '❌ Error' : '⏳ Raw'}
+        </span>`;
+      list.appendChild(div);
+    });
 }
 
 function toggleCity(city) {
@@ -259,28 +402,27 @@ function toggleAddress(id, checked) {
   if (addr) addr.selected = checked;
 }
 
-function selectAll()  {
+function selectAll() {
   state.addresses.forEach(a => { a.selected = true; });
   state.addresses.map(a => a.city).filter(Boolean).forEach(c => state.activeCities.add(c));
   saveCityFilter();
   renderAddressList();
 }
+
 function selectNone() {
   state.addresses.forEach(a => { a.selected = false; });
   state.activeCities.clear();
-  sessionStorage.setItem('activeCities', JSON.stringify([]));
+  saveCityFilter();
   renderAddressList();
 }
 
 // ─── Route Building ───────────────────────────────────────────────────────────
 async function buildRoute() {
-  if (!state.mapsLoaded) return alert('Google Maps noch nicht geladen. Bitte API Key eingeben und Seite neu laden.');
-
+  if (!state.mapsLoaded) return alert('Google Maps not loaded yet.');
   const selected = state.addresses.filter(a => a.selected);
-  if (selected.length < 1) return alert('Bitte mindestens eine Adresse auswählen');
-
+  if (selected.length < 1) return alert('Please select at least one address');
   const startAddr = document.getElementById('start-address').value.trim();
-  if (!startAddr) return alert('Bitte Startadresse eingeben');
+  if (!startAddr) return alert('Please enter start address');
 
   const avgSpeed = parseInt(document.getElementById('avg-speed').value) || 80;
   const maxRange = parseInt(document.getElementById('max-range').value) || 400;
@@ -288,23 +430,16 @@ async function buildRoute() {
   const breakInterval = parseInt(document.getElementById('break-interval').value) || 200;
   const vehicleType = document.getElementById('vehicle-type').value;
 
-  showLoading('Berechne optimierte Route...');
-
-  // Build stops with breaks and fuel stops
+  showLoading('Calculating optimized route...');
   const stops = buildStopsWithBreaks(startAddr, selected, maxRange, breakInterval, vehicleType);
 
   try {
-    // Show route panel first
     document.getElementById('setup-panel').classList.add('hidden');
     document.getElementById('route-panel').classList.remove('hidden');
-
-    // Init map
     if (!state.map) initMap();
-
-    // Calculate route via Directions API
     await calculateRoute(stops, avgSpeed, breakDuration, vehicleType);
   } catch (err) {
-    alert('Fehler beim Berechnen der Route: ' + err.message);
+    alert('Error calculating route: ' + err.message);
     backToSetup();
   } finally {
     hideLoading();
@@ -312,62 +447,30 @@ async function buildRoute() {
 }
 
 function buildStopsWithBreaks(startAddr, addresses, maxRange, breakInterval, vehicleType) {
-  const stops = [];
-  let kmSinceLastBreak = 0;
-  let kmSinceLastFuel = 0;
-
-  stops.push({ type: 'start', name: 'Start', address: startAddr });
-
-  addresses.forEach((addr, i) => {
-    // Estimate distance (rough: assume 50km avg between stops for planning)
-    const estimatedLeg = 50;
-    kmSinceLastBreak += estimatedLeg;
-    kmSinceLastFuel += estimatedLeg;
-
-    if (kmSinceLastFuel >= maxRange * 0.85) {
-      stops.push({
-        type: vehicleType === 'electric' ? 'fuel-stop' : 'fuel-stop',
-        name: vehicleType === 'electric' ? '⚡ Ladestation' : '⛽ Tankstelle',
-        address: addr.address, // near current location
-        isServiceStop: true
-      });
-      kmSinceLastFuel = 0;
+  const stops = [{ type: 'start', name: 'Start', address: startAddr }];
+  let kmBreak = 0, kmFuel = 0;
+  addresses.forEach(addr => {
+    kmBreak += 50; kmFuel += 50;
+    if (kmFuel >= maxRange * 0.85) {
+      stops.push({ type: 'fuel-stop', name: vehicleType === 'electric' ? '⚡ Charging station' : '⛽ Gas station', address: addr.address, isServiceStop: true });
+      kmFuel = 0;
     }
-
-    if (kmSinceLastBreak >= breakInterval) {
-      stops.push({
-        type: 'break',
-        name: '☕ Pause',
-        address: addr.address,
-        isServiceStop: true
-      });
-      kmSinceLastBreak = 0;
+    if (kmBreak >= breakInterval) {
+      stops.push({ type: 'break', name: '☕ Break', address: addr.address, isServiceStop: true });
+      kmBreak = 0;
     }
-
     stops.push({ type: 'destination', ...addr });
   });
-
   return stops;
 }
 
 function initMap() {
-  const mapEl = document.getElementById('map');
-  state.map = new google.maps.Map(mapEl, {
-    zoom: 7,
-    center: { lat: 51.1657, lng: 10.4515 }, // Germany center
-    mapTypeControl: false,
-    streetViewControl: false,
+  state.map = new google.maps.Map(document.getElementById('map'), {
+    zoom: 7, center: { lat: 51.1657, lng: 10.4515 }, mapTypeControl: false, streetViewControl: false
   });
-
-  state.directionsRenderer = new google.maps.DirectionsRenderer({
-    map: state.map,
-    suppressMarkers: false,
-  });
-
+  state.directionsRenderer = new google.maps.DirectionsRenderer({ map: state.map, suppressMarkers: false });
   state.trafficLayer = new google.maps.TrafficLayer();
   state.trafficLayer.setMap(state.map);
-
-  // Traffic status check
   updateTrafficBadge();
 }
 
@@ -376,94 +479,47 @@ function updateTrafficBadge() {
   const hour = new Date().getHours();
   const isRush = (hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 19);
   const isWeekend = [0, 6].includes(new Date().getDay());
-
-  if (isWeekend) {
-    badge.textContent = '🟢 Wenig Verkehr (Wochenende)';
-    badge.className = 'badge green';
-  } else if (isRush) {
-    badge.textContent = '🔴 Berufsverkehr möglich';
-    badge.className = 'badge red';
-  } else {
-    badge.textContent = '🟡 Normaler Verkehr';
-    badge.className = 'badge orange';
-  }
+  if (isWeekend)     { badge.textContent = '🟢 Low traffic (weekend)'; badge.className = 'badge green'; }
+  else if (isRush)   { badge.textContent = '🔴 Rush hour possible';    badge.className = 'badge red'; }
+  else               { badge.textContent = '🟡 Normal traffic';         badge.className = 'badge orange'; }
 }
 
 async function calculateRoute(stops, avgSpeed, breakDuration, vehicleType) {
   const directionsService = new google.maps.DirectionsService();
-
-  // Destinations = all non-service stops
   const destinations = stops.filter(s => s.type === 'destination' || s.type === 'start');
-  const start = destinations[0].address;
-  const end = destinations[destinations.length - 1].address;
   const waypoints = destinations.slice(1, -1).map(s => ({
     location: s.lat && s.lng ? new google.maps.LatLng(s.lat, s.lng) : s.address,
     stopover: true
   }));
 
-  const request = {
-    origin: start,
-    destination: end,
-    waypoints: waypoints.slice(0, 23), // Google limit: 23 waypoints
-    optimizeWaypoints: true,
-    travelMode: google.maps.TravelMode.DRIVING,
-    drivingOptions: {
-      departureTime: getNextWeekdayMorning(),
-      trafficModel: google.maps.TrafficModel.BEST_GUESS
-    },
-    language: 'de',
-    region: 'DE'
-  };
-
   return new Promise((resolve, reject) => {
-    directionsService.route(request, (result, status) => {
-      if (status === 'OK') {
-        state.directionsRenderer.setDirections(result);
-
-        // Parse route data
-        const route = result.routes[0];
-        const legs = route.legs;
-
-        let totalDistance = 0;
-        let totalDuration = 0;
-
-        legs.forEach(leg => {
-          totalDistance += leg.distance.value;
-          totalDuration += leg.duration_in_traffic
-            ? leg.duration_in_traffic.value
-            : leg.duration.value;
-        });
-
-        totalDistance = Math.round(totalDistance / 1000);
-        totalDuration = Math.round(totalDuration / 60);
-
-        // Add break time
-        const breakCount = Math.floor(totalDistance / 200);
-        const fuelCount = Math.floor(totalDistance / (document.getElementById('max-range') ? parseInt(document.getElementById('max-range').value) * 0.85 : 340));
-        const extraTime = breakCount * breakDuration + fuelCount * 20;
-        const totalWithBreaks = totalDuration + extraTime;
-
-        // Build ordered stops
-        const orderedWaypoints = route.waypoint_order;
-        const orderedDestinations = [destinations[0]];
-        orderedWaypoints.forEach(i => orderedDestinations.push(destinations.slice(1, -1)[i]));
-        if (destinations.length > 1) orderedDestinations.push(destinations[destinations.length - 1]);
-
-        state.route = {
-          stops: orderedDestinations,
-          totalDistance,
-          totalDuration: totalWithBreaks,
-          breakCount,
-          fuelCount,
-          result,
-          vehicleType
-        };
-
-        renderRouteDetails();
-        resolve();
-      } else {
-        reject(new Error(`Directions API: ${status}`));
-      }
+    directionsService.route({
+      origin: destinations[0].address,
+      destination: destinations[destinations.length - 1].address,
+      waypoints: waypoints.slice(0, 23),
+      optimizeWaypoints: true,
+      travelMode: google.maps.TravelMode.DRIVING,
+      drivingOptions: { departureTime: getNextWeekdayMorning(), trafficModel: google.maps.TrafficModel.BEST_GUESS },
+      language: 'de', region: 'DE'
+    }, (result, status) => {
+      if (status !== 'OK') return reject(new Error(`Directions API: ${status}`));
+      state.directionsRenderer.setDirections(result);
+      const legs = result.routes[0].legs;
+      let totalDistance = 0, totalDuration = 0;
+      legs.forEach(leg => {
+        totalDistance += leg.distance.value;
+        totalDuration += (leg.duration_in_traffic || leg.duration).value;
+      });
+      totalDistance = Math.round(totalDistance / 1000);
+      totalDuration = Math.round(totalDuration / 60);
+      const breakCount = Math.floor(totalDistance / 200);
+      const fuelCount = Math.floor(totalDistance / (parseInt(document.getElementById('max-range').value) * 0.85 || 340));
+      const orderedDestinations = [destinations[0]];
+      result.routes[0].waypoint_order.forEach(i => orderedDestinations.push(destinations.slice(1, -1)[i]));
+      if (destinations.length > 1) orderedDestinations.push(destinations[destinations.length - 1]);
+      state.route = { stops: orderedDestinations, totalDistance, totalDuration: totalDuration + breakCount * breakDuration + fuelCount * 20, breakCount, fuelCount, result, vehicleType };
+      renderRouteDetails();
+      resolve();
     });
   });
 }
@@ -479,44 +535,24 @@ function getNextWeekdayMorning() {
 
 function renderRouteDetails() {
   const r = state.route;
-  const hours = Math.floor(r.totalDuration / 60);
-  const mins = r.totalDuration % 60;
-
+  const hours = Math.floor(r.totalDuration / 60), mins = r.totalDuration % 60;
   document.getElementById('route-summary').innerHTML = `
-    <div class="summary-item">
-      <div class="value">${r.totalDistance} km</div>
-      <div class="label">Gesamtstrecke</div>
-    </div>
-    <div class="summary-item">
-      <div class="value">${hours}h ${mins}m</div>
-      <div class="label">Fahrzeit inkl. Pausen</div>
-    </div>
-    <div class="summary-item">
-      <div class="value">${r.stops.length - 1}</div>
-      <div class="label">Haltepunkte</div>
-    </div>`;
+    <div class="summary-item"><div class="value">${r.totalDistance} km</div><div class="label">Total distance</div></div>
+    <div class="summary-item"><div class="value">${hours}h ${mins}m</div><div class="label">Drive time incl. breaks</div></div>
+    <div class="summary-item"><div class="value">${r.stops.length - 1}</div><div class="label">Stops</div></div>`;
 
   const stopList = document.getElementById('stop-list');
   stopList.innerHTML = '';
-
   r.stops.forEach((stop, i) => {
-    // Insert break/fuel stops between destinations
     if (i > 0 && r.breakCount > 0 && i % Math.ceil(r.stops.length / (r.breakCount + 1)) === 0) {
-      stopList.appendChild(createStopEl({
-        type: 'break', name: '☕ Pause (ca. 30 Min)',
-        address: 'Raststätte empfohlen'
-      }));
+      stopList.appendChild(createStopEl({ type: 'break', name: '☕ Break (~30 min)', address: 'Rest area recommended' }));
     }
-
-    const leg = state.route.result.routes[0].legs[i > 0 ? i - 1 : 0];
-    const dist = i > 0 && leg ? leg.distance.text : '';
-    const dur = i > 0 && leg ? (leg.duration_in_traffic || leg.duration).text : '';
-
+    const leg = r.result.routes[0].legs[i > 0 ? i - 1 : 0];
     stopList.appendChild(createStopEl({
       type: i === 0 ? 'start' : 'destination',
       name: stop.name,
       address: stop.formatted_address || stop.address,
-      meta: dist && dur ? `${dist} · ${dur} Fahrzeit` : ''
+      meta: i > 0 && leg ? `${leg.distance.text} · ${(leg.duration_in_traffic || leg.duration).text}` : ''
     }));
   });
 }
@@ -538,37 +574,20 @@ function createStopEl({ type, name, address, meta }) {
 function openInGoogleMaps() {
   if (!state.route) return;
   const stops = state.route.stops;
-  if (stops.length === 0) return;
-
   const origin = encodeURIComponent(stops[0].formatted_address || stops[0].address);
   const dest = encodeURIComponent(stops[stops.length - 1].formatted_address || stops[stops.length - 1].address);
-  const waypoints = stops.slice(1, -1)
-    .map(s => encodeURIComponent(s.formatted_address || s.address))
-    .join('|');
-
-  let url = `https://www.google.de/maps/dir/${origin}/${waypoints ? waypoints + '/' : ''}${dest}`;
-  window.open(url, '_blank');
+  const wps = stops.slice(1, -1).map(s => encodeURIComponent(s.formatted_address || s.address)).join('|');
+  window.open(`https://www.google.de/maps/dir/${origin}/${wps ? wps + '/' : ''}${dest}`, '_blank');
 }
 
 function exportRoute() {
   if (!state.route) return;
   const r = state.route;
-  const hours = Math.floor(r.totalDuration / 60);
-  const mins = r.totalDuration % 60;
-
-  let text = `Routenplan\n${'='.repeat(40)}\n`;
-  text += `Gesamtstrecke: ${r.totalDistance} km\n`;
-  text += `Fahrzeit (inkl. Pausen): ${hours}h ${mins}m\n`;
-  text += `Pausen: ${r.breakCount} × ${document.getElementById('break-duration').value} Min\n\n`;
-  text += `Haltepunkte:\n`;
-
-  r.stops.forEach((s, i) => {
-    text += `${i + 1}. ${s.name}\n   ${s.formatted_address || s.address}\n`;
-  });
-
-  const blob = new Blob([text], { type: 'text/plain' });
+  const hours = Math.floor(r.totalDuration / 60), mins = r.totalDuration % 60;
+  let text = `Route Plan\n${'='.repeat(40)}\nTotal distance: ${r.totalDistance} km\nDrive time (incl. breaks): ${hours}h ${mins}m\n\nStops:\n`;
+  r.stops.forEach((s, i) => { text += `${i + 1}. ${s.name}\n   ${s.formatted_address || s.address}\n`; });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
   a.download = 'route.txt';
   a.click();
 }
@@ -580,13 +599,11 @@ function backToSetup() {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function showLoading(text) {
-  document.getElementById('loading-text').textContent = text || 'Lade...';
+  document.getElementById('loading-text').textContent = text || 'Loading...';
   document.getElementById('loading').classList.remove('hidden');
 }
 
-function hideLoading() {
-  document.getElementById('loading').classList.add('hidden');
-}
+function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
 
 function saveCityFilter() {
   if (!state.fileKey) return;
