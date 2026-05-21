@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -18,8 +18,9 @@ app.use(express.json());
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDzdc9GUQN6X2r8vw1_7kcVGRyvP5ZLoNM';
 const JWT_SECRET = process.env.JWT_SECRET || 'route-planner-change-me';
 const DATA_DIR = '/app/data';
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const LOGS_FILE  = path.join(DATA_DIR, 'logs.json');
+const USERS_FILE  = path.join(DATA_DIR, 'users.json');
+const LOGS_FILE   = path.join(DATA_DIR, 'logs.json');
+const ROUTES_FILE = path.join(DATA_DIR, 'routes.json');
 
 // ─── User Storage ─────────────────────────────────────────────────────────────
 function readUsers() {
@@ -50,6 +51,17 @@ function readLogs() {
 }
 function writeLogs(logs) {
   fs.writeFileSync(LOGS_FILE, JSON.stringify(logs, null, 2));
+}
+
+// ─── Routes Storage ───────────────────────────────────────────────────────────
+function readRoutes() {
+  try {
+    if (!fs.existsSync(ROUTES_FILE)) return [];
+    return JSON.parse(fs.readFileSync(ROUTES_FILE, 'utf8'));
+  } catch { return []; }
+}
+function writeRoutes(data) {
+  fs.writeFileSync(ROUTES_FILE, JSON.stringify(data, null, 2));
 }
 function logAction(user, action, details = {}) {
   const logs = readLogs();
@@ -223,5 +235,46 @@ app.put('/api/profile/home-address', requireAuth, (req, res) => {
   res.json({ ok: true, homeAddress: users[idx].homeAddress });
 });
 
+// ─── Saved Routes ─────────────────────────────────────────────────────────────
+app.get('/api/routes', requireAuth, (req, res) => {
+  const all = readRoutes().filter(r => r.userId === req.user.id);
+  res.json(all.map(({ addresses, settings, ...r }) => r));
+});
+
+app.post('/api/routes', requireAuth, (req, res) => {
+  const { name, addresses, settings, summary } = req.body;
+  if (!name || !addresses || !settings) return res.status(400).json({ error: 'Missing fields' });
+  const routes = readRoutes();
+  const route = {
+    id: Date.now(),
+    userId: req.user.id,
+    name: name.trim(),
+    createdAt: new Date().toISOString(),
+    addresses,
+    settings,
+    summary: summary || {}
+  };
+  routes.push(route);
+  writeRoutes(routes);
+  const { addresses: _, settings: __, ...safe } = route;
+  res.json(safe);
+});
+
+app.get('/api/routes/:id', requireAuth, (req, res) => {
+  const route = readRoutes().find(r => r.id == req.params.id && r.userId === req.user.id);
+  if (!route) return res.status(404).json({ error: 'Not found' });
+  res.json(route);
+});
+
+app.delete('/api/routes/:id', requireAuth, (req, res) => {
+  const routes = readRoutes();
+  const idx = routes.findIndex(r => r.id == req.params.id && r.userId === req.user.id);
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  routes.splice(idx, 1);
+  writeRoutes(routes);
+  res.json({ ok: true });
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+
