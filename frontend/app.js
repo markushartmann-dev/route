@@ -17,6 +17,7 @@ const TRANSLATIONS = {
     'settings-electric': '⚡ Elektroauto',
     'settings-break-duration': 'Pausendauer (Min)',
     'settings-break-interval': 'Pause alle (km)',
+    'settings-visit-label': 'Ø Besuchszeit pro Kunde (Min)',
     'import-title': '📂 Excel importieren',
     'import-drop-line1': 'Excel-Datei hier ablegen',
     'import-drop-line2': 'oder klicken zum Auswählen',
@@ -113,6 +114,7 @@ const TRANSLATIONS = {
     'settings-electric': '⚡ Electric',
     'settings-break-duration': 'Break Duration (min)',
     'settings-break-interval': 'Break Every (km)',
+    'settings-visit-label': 'Avg Visit Time per Customer (min)',
     'import-title': '📂 Import Excel',
     'import-drop-line1': 'Drop Excel file here',
     'import-drop-line2': 'or click to select',
@@ -793,15 +795,21 @@ async function buildRoute() {
   const breakDuration = parseInt(document.getElementById('break-duration').value) || 30;
   const breakInterval = parseInt(document.getElementById('break-interval').value) || 200;
   const vehicleType = document.getElementById('vehicle-type').value;
+  const visitDuration = parseInt(document.getElementById('avg-visit-time').value) || 60;
+  const wantFastfood = document.getElementById('fastfood-stop').checked;
 
   showLoading(t('loading-route'));
-  const stops = buildStopsWithBreaks(startAddr, selected, maxRange, breakInterval, vehicleType);
+  let stops = buildStopsWithBreaks(startAddr, selected, maxRange, breakInterval, vehicleType);
 
   try {
     document.getElementById('setup-panel').classList.add('hidden');
     document.getElementById('route-panel').classList.remove('hidden');
     if (!state.map) initMap();
-    await calculateRoute(stops, avgSpeed, breakDuration, vehicleType);
+    if (wantFastfood) {
+      const ff = await findFastfoodNearMidpoint(selected);
+      if (ff) stops.splice(Math.floor(stops.length / 2), 0, ff);
+    }
+    await calculateRoute(stops, avgSpeed, breakDuration, vehicleType, visitDuration);
   } catch (err) {
     alert(t('alert-route-error') + err.message);
     backToSetup();
@@ -828,6 +836,34 @@ function buildStopsWithBreaks(startAddr, addresses, maxRange, breakInterval, veh
   return stops;
 }
 
+function findFastfoodNearMidpoint(addresses) {
+  const withCoords = addresses.filter(a => a.lat && a.lng);
+  if (!withCoords.length) return Promise.resolve(null);
+  const lat = withCoords.reduce((s, a) => s + parseFloat(a.lat), 0) / withCoords.length;
+  const lng = withCoords.reduce((s, a) => s + parseFloat(a.lng), 0) / withCoords.length;
+  const center = new google.maps.LatLng(lat, lng);
+  return new Promise(resolve => {
+    const service = new google.maps.places.PlacesService(document.createElement('div'));
+    service.nearbySearch(
+      { location: center, radius: 10000, keyword: "McDonald's Burger King", type: 'restaurant' },
+      (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length) {
+          const p = results[0];
+          resolve({
+            type: 'fastfood',
+            name: '🍔 ' + p.name,
+            address: p.vicinity,
+            lat: p.geometry.location.lat(),
+            lng: p.geometry.location.lng(),
+          });
+        } else {
+          resolve(null);
+        }
+      }
+    );
+  });
+}
+
 function initMap() {
   state.map = new google.maps.Map(document.getElementById('map'), {
     zoom: 7, center: { lat: 51.1657, lng: 10.4515 }, mapTypeControl: false, streetViewControl: false
@@ -848,9 +884,9 @@ function updateTrafficBadge() {
   else               { badge.textContent = t('traffic-normal');  badge.className = 'badge orange'; }
 }
 
-async function calculateRoute(stops, avgSpeed, breakDuration, vehicleType) {
+async function calculateRoute(stops, avgSpeed, breakDuration, vehicleType, visitDuration = 0) {
   const directionsService = new google.maps.DirectionsService();
-  const destinations = stops.filter(s => s.type === 'destination' || s.type === 'start');
+  const destinations = stops.filter(s => s.type === 'destination' || s.type === 'start' || s.type === 'fastfood');
   const waypoints = destinations.slice(1, -1).map(s => ({
     location: s.lat && s.lng ? new google.maps.LatLng(s.lat, s.lng) : s.address,
     stopover: true
@@ -878,10 +914,11 @@ async function calculateRoute(stops, avgSpeed, breakDuration, vehicleType) {
       totalDuration = Math.round(totalDuration / 60);
       const breakCount = Math.floor(totalDistance / 200);
       const fuelCount = Math.floor(totalDistance / (parseInt(document.getElementById('max-range').value) * 0.85 || 340));
+      const destinationCount = stops.filter(s => s.type === 'destination').length;
       const orderedDestinations = [destinations[0]];
       result.routes[0].waypoint_order.forEach(i => orderedDestinations.push(destinations.slice(1, -1)[i]));
       if (destinations.length > 1) orderedDestinations.push(destinations[destinations.length - 1]);
-      state.route = { stops: orderedDestinations, totalDistance, totalDuration: totalDuration + breakCount * breakDuration + fuelCount * 20, breakCount, fuelCount, result, vehicleType };
+      state.route = { stops: orderedDestinations, totalDistance, totalDuration: totalDuration + breakCount * breakDuration + fuelCount * 20 + destinationCount * visitDuration, breakCount, fuelCount, result, vehicleType, visitDuration, destinationCount };
       renderRouteDetails();
       resolve();
     });
@@ -900,10 +937,14 @@ function getNextWeekdayMorning() {
 function renderRouteDetails() {
   const r = state.route;
   const hours = Math.floor(r.totalDuration / 60), mins = r.totalDuration % 60;
+  const visitItem = r.visitDuration > 0
+    ? `<div class="summary-item"><div class="value">${r.visitDuration} Min</div><div class="label">Ø Besuchszeit</div></div>`
+    : '';
   document.getElementById('route-summary').innerHTML = `
     <div class="summary-item"><div class="value">${r.totalDistance} km</div><div class="label">${t('summary-distance')}</div></div>
     <div class="summary-item"><div class="value">${hours}h ${mins}m</div><div class="label">${t('summary-duration')}</div></div>
-    <div class="summary-item"><div class="value">${r.stops.length - 1}</div><div class="label">${t('summary-stops')}</div></div>`;
+    <div class="summary-item"><div class="value">${r.stops.length - 1}</div><div class="label">${t('summary-stops')}</div></div>
+    ${visitItem}`;
 
   const stopList = document.getElementById('stop-list');
   stopList.innerHTML = '';
@@ -913,7 +954,7 @@ function renderRouteDetails() {
     }
     const leg = r.result.routes[0].legs[i > 0 ? i - 1 : 0];
     stopList.appendChild(createStopEl({
-      type: i === 0 ? 'start' : 'destination',
+      type: stop.type || (i === 0 ? 'start' : 'destination'),
       name: stop.name,
       address: stop.formatted_address || stop.address,
       meta: i > 0 && leg ? `${leg.distance.text} · ${(leg.duration_in_traffic || leg.duration).text}` : ''
@@ -923,8 +964,8 @@ function renderRouteDetails() {
 
 function createStopEl({ type, name, address, meta }) {
   const div = document.createElement('div');
-  div.className = `stop-item ${type === 'break' ? 'break-stop' : type === 'start' ? 'start-stop' : type === 'fuel-stop' ? 'fuel-stop' : ''}`;
-  const icons = { start: '🏠', destination: '📍', break: '☕', 'fuel-stop': '⛽' };
+  div.className = `stop-item ${type === 'break' ? 'break-stop' : type === 'start' ? 'start-stop' : type === 'fuel-stop' ? 'fuel-stop' : type === 'fastfood' ? 'fastfood-stop' : ''}`;
+  const icons = { start: '🏠', destination: '📍', break: '☕', 'fuel-stop': '⛽', fastfood: '🍔' };
   div.innerHTML = `
     <div class="stop-icon">${icons[type] || '📍'}</div>
     <div class="stop-info">
@@ -983,3 +1024,4 @@ function loadCityFilter() {
 function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
