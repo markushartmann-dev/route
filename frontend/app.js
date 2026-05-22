@@ -720,10 +720,6 @@ function renderAddressList() {
 
   const cities = [...new Set(state.addresses.map(a => a.city).filter(Boolean))].sort();
   if (cities.length > 1) {
-    if (state.activeCities.size === 0) {
-      const saved = loadCityFilter();
-      (saved ? saved.filter(c => cities.includes(c)) : cities).forEach(c => state.activeCities.add(c));
-    }
     const filterDiv = document.createElement('div');
     filterDiv.className = 'city-filter';
     filterDiv.innerHTML = `<span class="city-filter-label">${t('cities-label')}</span>`;
@@ -761,6 +757,10 @@ function toggleCity(city) {
     state.activeCities.delete(city);
     state.addresses.filter(a => a.city === city).forEach(a => a.selected = false);
   } else {
+    // First chip click from empty state → deselect all other cities first
+    if (state.activeCities.size === 0) {
+      state.addresses.filter(a => a.city !== city).forEach(a => a.selected = false);
+    }
     state.activeCities.add(city);
     state.addresses.filter(a => a.city === city).forEach(a => a.selected = true);
   }
