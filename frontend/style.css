@@ -716,21 +716,80 @@ h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; color: var(--tex
   overflow: hidden;
 }
 
+.week-prev-item {
+  border-bottom: 1px solid var(--border);
+}
+.week-prev-item:last-child { border-bottom: none; }
+
 .week-prev-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
 }
-.week-prev-row:last-child { border-bottom: none; }
+.week-prev-row:hover { background: var(--bg-item-hover); }
 .week-prev-row.over { background: #fff5f5; }
 [data-theme="dark"] .week-prev-row.over { background: #2d1b1b; }
+[data-theme="dark"] .week-prev-row.over:hover { background: #3a1f1f; }
 
+.week-prev-toggle { font-size: 0.68rem; color: var(--text-muted); width: 12px; flex-shrink: 0; }
 .week-prev-day   { flex: 1; font-size: 0.85rem; font-weight: 600; }
-.week-prev-count { font-size: 0.82rem; color: var(--text-muted); min-width: 70px; text-align: right; }
-.week-prev-time  { font-size: 0.82rem; font-weight: 600; min-width: 60px; text-align: right; }
+.week-prev-count { font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; }
+.week-prev-time  { font-size: 0.82rem; font-weight: 600; min-width: 56px; text-align: right; white-space: nowrap; }
 .week-prev-row.over .week-prev-time { color: #dc2626; }
+
+/* Expanded customer list */
+.week-cust-list {
+  padding: 4px 14px 10px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+
+.week-cust-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  min-width: 0;
+}
+.week-cust-row:hover { background: var(--bg-item); }
+
+.week-cust-row input[type="checkbox"] {
+  width: 15px; height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: none; padding: 0; margin: 0;
+  font-size: inherit; /* prevent iOS override */
+}
+
+.week-cust-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  color: var(--text);
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.week-cust-addr {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
 
 /* ─── Mobile / iPhone ────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
