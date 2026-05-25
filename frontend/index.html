@@ -168,6 +168,7 @@
         <div class="card-actions">
           <button class="btn-secondary" onclick="selectAll()" data-i18n="addr-select-all">Alle auswählen</button>
           <button class="btn-secondary" onclick="selectNone()" data-i18n="addr-select-none">Keine</button>
+          <button class="btn-secondary" onclick="openWeekPlanner()" id="week-planner-btn">🗓️ Wochenplanung</button>
           <button class="btn-primary" onclick="buildRoute()" data-i18n="addr-build-route">🗺️ Route berechnen</button>
         </div>
       </div>
@@ -278,6 +279,38 @@
           </table>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Week Planner Modal ───────────────────────────────────────────────────── -->
+<div id="week-modal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h2>🗓️ Wochenplanung</h2>
+      <button class="modal-close" onclick="closeWeekPlanner()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Calendar navigation -->
+      <div class="week-cal-wrap">
+        <div class="week-cal-nav">
+          <button class="btn-secondary wcal-arrow" onclick="shiftWeekCal(-1)">‹</button>
+          <span id="wcal-month" class="wcal-month"></span>
+          <button class="btn-secondary wcal-arrow" onclick="shiftWeekCal(1)">›</button>
+        </div>
+        <div class="wcal-header">
+          <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+        </div>
+        <div id="wcal-grid"></div>
+      </div>
+      <!-- Selected days with hours input -->
+      <div id="week-day-list"></div>
+      <!-- Distribution preview -->
+      <div id="week-preview"></div>
+      <!-- Create button -->
+      <button id="week-create-btn" class="btn-primary" onclick="createWeekRoutes()" style="width:100%;display:none">
+        📅 Routen für alle Tage erstellen &amp; speichern
+      </button>
     </div>
   </div>
 </div>
