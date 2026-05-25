@@ -242,7 +242,7 @@ const state = {
   trafficLayer: null,
   mapsLoaded: false,
   homeAddress: '',
-  weekPlan: { selectedDays: [], calOffset: 0 },
+  weekPlan: { selectedDays: [], calOffset: 0, distribution: [], excludedByDay: {}, expandedDays: new Set() },
 };
 
 const BACKEND = '/api';
@@ -1262,7 +1262,7 @@ function toggleWeekDay(dateStr) {
 
 function updateDayHours(dateStr, hours) {
   const day = state.weekPlan.selectedDays.find(x => x.date === dateStr);
-  if (day) { day.hours = Math.max(1, parseInt(hours) || 8); updateWeekPreview(); }
+  if (day) { day.hours = Math.max(1, parseInt(hours) || 8); renderWeekPreview(); }
 }
 
 function updateWeekDayList() {
@@ -1286,38 +1286,97 @@ function updateWeekDayList() {
   }).join('');
 }
 
+// Recomputes geographic distribution and resets exclusions, then renders.
 function updateWeekPreview() {
+  const selected = state.addresses.filter(a => a.selected);
+  const days     = state.weekPlan.selectedDays;
+  if (!days.length || !selected.length) {
+    state.weekPlan.distribution = [];
+    state.weekPlan.excludedByDay = {};
+    renderWeekPreview();
+    return;
+  }
+  state.weekPlan.distribution = distributeToWeek(selected, days);
+  state.weekPlan.excludedByDay = {};  // reset per-day exclusions on redistribution
+  renderWeekPreview();
+}
+
+// Renders the preview using the cached distribution (no recomputation).
+function renderWeekPreview() {
   const preview   = document.getElementById('week-preview');
   const createBtn = document.getElementById('week-create-btn');
-  const selected  = state.addresses.filter(a => a.selected);
   const days      = state.weekPlan.selectedDays;
+  const dist      = state.weekPlan.distribution;
 
-  if (!days.length || !selected.length) {
+  if (!days.length || !dist.length) {
     preview.innerHTML = '';
     if (createBtn) createBtn.style.display = 'none';
     return;
   }
 
-  const visitMin   = parseInt(document.getElementById('avg-visit-time').value) || 60;
-  const distribution = distributeToWeek(selected, days);
+  const visitMin = parseInt(document.getElementById('avg-visit-time').value) || 60;
 
   preview.innerHTML = '<div class="week-preview-box">' +
     days.map((day, i) => {
-      const customers = distribution[i] || [];
-      const totalMin  = customers.length * visitMin;
-      const availMin  = day.hours * 60;
-      const isOver    = totalMin > availMin;
+      const customers  = dist[i] || [];
+      const excluded   = state.weekPlan.excludedByDay[i] || new Set();
+      const active     = customers.filter(c => !excluded.has(c.id));
+      const totalMin   = active.length * visitMin;
+      const availMin   = day.hours * 60;
+      const isOver     = totalMin > availMin;
       const h = Math.floor(totalMin / 60), m = totalMin % 60;
       const d = new Date(day.date + 'T12:00:00');
       const label = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
-      return `<div class="week-prev-row${isOver ? ' over' : ''}">
-        <span class="week-prev-day">${label}</span>
-        <span class="week-prev-count">${customers.length} Kunden</span>
-        <span class="week-prev-time">${h > 0 ? h + 'h ' : ''}${m}m${isOver ? ' ⚠️' : ''}</span>
+      const isExpanded = state.weekPlan.expandedDays.has(i);
+
+      const customerRows = isExpanded
+        ? '<div class="week-cust-list" onclick="event.stopPropagation()">' +
+          customers.map(c => {
+            const chk = !excluded.has(c.id);
+            return `<label class="week-cust-row">
+              <input type="checkbox" ${chk ? 'checked' : ''}
+                onchange="toggleWeekCustomer(${i},${JSON.stringify(c.id)},this.checked)" />
+              <span class="week-cust-name">${escHtml(c.name)}</span>
+              <span class="week-cust-addr">${escHtml(c.formatted_address || c.address || '')}</span>
+            </label>`;
+          }).join('') + '</div>'
+        : '';
+
+      const countLabel = active.length < customers.length
+        ? `${active.length}/${customers.length} Kunden`
+        : `${customers.length} Kunden`;
+
+      return `<div class="week-prev-item">
+        <div class="week-prev-row${isOver ? ' over' : ''}" onclick="toggleWeekExpand(${i})">
+          <span class="week-prev-toggle">${isExpanded ? '▼' : '▶'}</span>
+          <span class="week-prev-day">${label}</span>
+          <span class="week-prev-count">${countLabel}</span>
+          <span class="week-prev-time">${h > 0 ? h + 'h ' : ''}${m}m${isOver ? ' ⚠️' : ''}</span>
+        </div>
+        ${customerRows}
       </div>`;
     }).join('') + '</div>';
 
   if (createBtn) createBtn.style.display = '';
+}
+
+function toggleWeekExpand(dayIdx) {
+  if (state.weekPlan.expandedDays.has(dayIdx)) {
+    state.weekPlan.expandedDays.delete(dayIdx);
+  } else {
+    state.weekPlan.expandedDays.add(dayIdx);
+  }
+  renderWeekPreview();
+}
+
+function toggleWeekCustomer(dayIdx, addressId, checked) {
+  if (!state.weekPlan.excludedByDay[dayIdx]) state.weekPlan.excludedByDay[dayIdx] = new Set();
+  if (checked) {
+    state.weekPlan.excludedByDay[dayIdx].delete(addressId);
+  } else {
+    state.weekPlan.excludedByDay[dayIdx].add(addressId);
+  }
+  renderWeekPreview();
 }
 
 // ─── Geographic distribution (K-means++) ──────────────────────────────────────
@@ -1438,15 +1497,16 @@ async function createWeekRoutes() {
     fastfoodStop:  false,
   };
 
-  const visitMin     = parseInt(settings.visitDuration) || 60;
-  const distribution = distributeToWeek(selected, days);
+  const visitMin   = parseInt(settings.visitDuration) || 60;
+  const dist       = state.weekPlan.distribution.length ? state.weekPlan.distribution : distributeToWeek(selected, days);
   let saved = 0, failed = 0;
 
   showLoading('Routen werden gespeichert...');
 
   for (let i = 0; i < days.length; i++) {
     const dayData  = days[i];
-    const addrs    = distribution[i] || [];
+    const excluded = state.weekPlan.excludedByDay[i] || new Set();
+    const addrs    = (dist[i] || []).filter(a => !excluded.has(a.id));
     if (!addrs.length) continue;
 
     const d    = new Date(dayData.date + 'T12:00:00');
