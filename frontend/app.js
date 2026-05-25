@@ -1220,7 +1220,7 @@ function renderWeekCal() {
     for (let col = 0; col < 7; col++) {
       const d = new Date(firstDay);
       d.setDate(firstDay.getDate() + row * 7 + col);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
       const isPast   = d < today;
       const isToday  = d.getTime() === today.getTime();
       const isSel    = state.weekPlan.selectedDays.some(x => x.date === dateStr);
@@ -1389,6 +1389,26 @@ function kMeansCluster(points, k) {
 
   const groups = Array.from({ length: k }, () => []);
   points.forEach((p, i) => groups[assignments[i]].push(p));
+
+  // Rebalance: move excess points from oversized clusters to smallest clusters
+  const maxSize = Math.ceil(points.length / k);
+  for (let src = 0; src < k; src++) {
+    while (groups[src].length > maxSize) {
+      // find smallest cluster
+      const dst = groups.reduce((best, g, i) => g.length < groups[best].length ? i : best, 0);
+      if (dst === src) break;
+      // destination centroid
+      const dstCen = groups[dst].length
+        ? { lat: groups[dst].reduce((s,p) => s + parseFloat(p.lat), 0) / groups[dst].length,
+            lng: groups[dst].reduce((s,p) => s + parseFloat(p.lng), 0) / groups[dst].length }
+        : centroids[dst];
+      // move the point in src closest to dst centroid
+      let bi = 0, bd = Infinity;
+      groups[src].forEach((p, i) => { const d = dist2(p, dstCen); if (d < bd) { bd = d; bi = i; } });
+      groups[dst].push(groups[src].splice(bi, 1)[0]);
+    }
+  }
+
   return groups;
 }
 
